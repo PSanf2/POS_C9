@@ -1,82 +1,26 @@
 #include <keyboard.h>
 
-static char key_map[256] =
-{
-	0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
-	'9', '0', '-', '=', '\b',	/* Backspace */
-	'\t',			/* Tab */
-	'q', 'w', 'e', 'r',	/* 19 */
-	't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',	/* Enter key */
-	0,			/* 29   - Control */
-	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',	/* 39 */
-	'\'', '`',   0,		/* Left shift */
-	'\\', 'z', 'x', 'c', 'v', 'b', 'n',			/* 49 */
-	'm', ',', '.', '/',   0,				/* Right shift */
-	'*',
-	0,	/* Alt */
-	' ',	/* Space bar */
-	0,	/* Caps lock */
-	0,	/* 59 - F1 key ... > */
-	0,   0,   0,   0,   0,   0,   0,   0,
-	0,	/* < ... F10 */
-	0,	/* 69 - Num lock*/
-	0,	/* Scroll Lock */
-	0,	/* Home key */
-	0,	/* Up Arrow */
-	0,	/* Page Up */
-	'-',
-	0,	/* Left Arrow */
-	0,
-	0,	/* Right Arrow */
-	'+',
-	0,	/* 79 - End key*/
-	0,	/* Down Arrow */
-	0,	/* Page Down */
-	0,	/* Insert Key */
-	0,	/* Delete Key */
-	0,   0,   0,
-	0,	/* F11 Key */
-	0,	/* F12 Key */
-	0,	/* All other keys are undefined */
-	/* 90 through 128 undefined */
-/* SHIFT VALUES add 90 to get to shift value */
-	0,  27, '!', '@', '#', '$', '%', '^', '&', '*',	/* 9 */
-	'(', ')', '_', '+', '\b',	/* BACKSPACE */
-	'\t',			/* TAB */
-	'Q', 'W', 'E', 'R',	/* 19 */
-	'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',	/* ENTER KEY */
-	0,			/* 29   - CONTROL */
-	'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':',	/* 39 */
-	'"', '~',   0,		/* LEFT SHIFT */
-	'|', 'Z', 'X', 'C', 'V', 'B', 'N',			/* 49 */
-	'M', '<', '>', '?',   0,			/* RIGHT SHIFT */
-	'*',
-	0,	/* ALT */
-	' ',	/* SPACE BAR */
-	0,	/* CAPS LOCK */
-	0,	/* 59 - F1 KEY ... > */
-	0,   0,   0,   0,   0,   0,   0,   0,
-	0,	/* < ... F10 */
-	0,	/* 69 - NUM LOCK*/
-	0,	/* SCROLL LOCK */
-	0,	/* HOME KEY */
-	0,	/* UP ARROW */
-	0,	/* PAGE UP */
-	'-',
-	0,	/* LEFT ARROW */
-	0,
-	0,	/* RIGHT ARROW */
-	'+',
-	0,	/* 79 - END KEY*/
-	0,	/* DOWN ARROW */
-	0,	/* PAGE DOWN */
-	0,	/* INSERT KEY */
-	0,	/* DELETE KEY */
-	0,   0,   0,
-	0,	/* F11 KEY */
-	0,	/* F12 KEY */
-	0,	/* ALL OTHER KEYS ARE UNDEFINED */
-};
+int shiftKeyDown;
+
+// Keymaps: US International
+
+// Non-Shifted scancodes to ASCII:
+static char asciiNonShift[] = {
+NULL, ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', BACKSPACE,
+TAB, 'q', 'w',   'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',   '[', ']', ENTER, 0,
+'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', 0, '\\',
+'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0, ' ', 0,
+KF1, KF2, KF3, KF4, KF5, KF6, KF7, KF8, KF9, KF10, 0, 0,
+KHOME, KUP, KPGUP,'-', KLEFT, '5', KRIGHT, '+', KEND, KDOWN, KPGDN, KINS, KDEL, 0, 0, 0, KF11, KF12 };
+
+// Shifted scancodes to ASCII:
+static char asciiShift[] = {
+NULL, ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', BACKSPACE,
+TAB, 'Q', 'W',   'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',   '{', '}', ENTER, 0,
+'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~', 0, '|',
+'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0,
+KF1,   KF2, KF3, KF4, KF5, KF6, KF7, KF8, KF9, KF10, 0, 0,
+KHOME, KUP, KPGUP, '-', KLEFT, '5',   KRIGHT, '+', KEND, KDOWN, KPGDN, KINS, KDEL, 0, 0, 0, KF11, KF12 };
 
 // keyboard buffer
 static u8int keyboard_buffer[KEYBOARD_BUFFER_SIZE];
@@ -112,15 +56,32 @@ void keyboard_interrupt_handler(__attribute__ ((unused)) registers regs)
 {
 	u8int scancode;
 	
-	scancode = inb(0x60);
+	scancode = inb(0x60);	// get the scancode from the keyboard
 	
-	if (scancode & 0x80)
+	if (scancode & 0x80)	// was a key released? check bit 7 of scancode for this (10000000b = 0x80)
 	{
-		
+		// compare only the low seven bits
+		scancode &= 0x7F;
+		if (scancode == KRLEFT_SHIFT || scancode == KRRIGHT_SHIFT)
+		{
+			shiftKeyDown = 0;
+		}
 	}
-	else
+	else	// a key was pressed
 	{
-		keyboard_buffer[buffer_length++] = key_map[scancode];
+		// was the shift key pressed?
+		if (scancode == KRLEFT_SHIFT || scancode == KRRIGHT_SHIFT)
+		{
+			shiftKeyDown = 1;
+		}
+		if (shiftKeyDown)
+		{
+			keyboard_buffer[buffer_length++] = asciiShift[scancode];
+		}
+		else
+		{
+			keyboard_buffer[buffer_length++] = asciiNonShift[scancode];
+		}
 		if (buffer_length == KEYBOARD_BUFFER_SIZE)
 		{
 			keyboard_flush();

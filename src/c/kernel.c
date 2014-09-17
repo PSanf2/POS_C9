@@ -11,6 +11,7 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	idt_initialize();
 	memset((u8int *) &interrupt_handler, 0, sizeof(isr) * 256);
 	
+	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
 	put_str("Welcome to Patrick's Operating System!\n");
 	
@@ -19,7 +20,7 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	keyboard_initialize();
 	keyboard_set_handler(kernel_keyboard_handler);
 	
-	/* works
+	/* works. this shows that the interrupts are working, and the timer is keeping track of system up time.
 	for (;;)
 	{
 		u32int count = get_tick();
@@ -29,6 +30,18 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	}
 	*/
 	
+	/* works. this shows that the timer is working and we can make the machine wait
+	put_str("Current tick is ");
+	put_dec(get_tick());
+	put_str("\nWaiting 1000 ticks");
+	u32int end_tick = get_tick() + 1000;
+	while (get_tick() < end_tick) {}
+	put_str("\nDone.");
+	put_str("\nCurrent tick is ");
+	put_dec(get_tick());
+	*/
+	
+	// This keeps the keyboard handler updating the screen.
 	for (;;)
 	{
 		keyboard_flush();
