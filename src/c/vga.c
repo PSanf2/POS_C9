@@ -137,3 +137,52 @@ void clear_screen()
 	csr_y = 0;
 	move_csr();
 }
+
+// setting up a buffer for the vga.
+// anything wanting to output something to the screen should write its crap to this buffer
+// the kernel will occationally flush the buffer to the screen.
+// in this way i won't have crap crashing the system by trying to write to the screen while an interrupt is running
+
+static u8int vga_buffer[VGA_BUFFER_SIZE];
+static u16int buffer_length = 0;
+static void (*vga_handler)(u8int *buf, u16int size) = NULL;
+
+// this sets the callback function on the kernel that actually takes care of business from kernel space
+void vga_set_handler(void (*callback)(u8int *buf, u16int size))
+{
+	vga_handler = callback;
+}
+
+// calling this function will cause whwatever's in the buffer to be put on the screen, and clear the buffer
+void vga_flush()
+{
+	if (buffer_length > 0)
+	{
+		//disable_interrupts(); // i don't think writing to the screen should be an issue
+		if (vga_handler != NULL)
+		{
+			vga_handler(vga_buffer, buffer_length);
+		}
+		buffer_length = 0;
+		//enable_interrupts();
+	}
+}
+
+void vga_buffer_put_char(char c)
+{
+	//keyboard_buffer[buffer_length++] = asciiShift[scancode];
+	vga_buffer[buffer_length++] = c;
+	if (buffer_length == VGA_BUFFER_SIZE)
+	{
+		vga_flush();
+	}
+}
+
+void vga_buffer_put_str(char *str)
+{
+	int i = 0;
+	while (str[i])
+	{
+		vga_buffer_put_char(str[i++]);
+	}
+}

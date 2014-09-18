@@ -11,6 +11,7 @@ OUT_FILE_NAME = Patricks_OS
 # Important programs
 GAS = $(TOOL_DIR)i686-elf-as
 GCC = $(TOOL_DIR)i686-elf-gcc
+OBJCOPY = $(TOOL_DIR)i686-elf-objcopy
 
 # Important files
 LINKER_SCRIPT = linker.ld
@@ -55,6 +56,9 @@ grub-iso: link
 
 qemu-run: grub-iso
 	qemu-system-i386 -cdrom $(OUT_FILE_NAME).iso -monitor stdio
+	
+debug-run: grub-iso
+	qemu-system-i386 -S -s -cdrom $(OUT_FILE_NAME).iso -monitor stdio
 
 clean:
 	rm -rf build/*.o

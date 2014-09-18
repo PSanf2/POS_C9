@@ -20,6 +20,8 @@
 #define LIGHT_BROWN 14
 #define WHITE 15
 
+#define VGA_BUFFER_SIZE 4096
+
 extern void set_text_color(u8int foreground_color, u8int background_color);
 extern void put_str(char *str);
 extern void put_char(char c);
@@ -27,5 +29,9 @@ extern void scroll();
 extern void move_csr();
 extern void put_dec(u32int n);
 extern void clear_screen();
+extern void vga_set_handler(void (*callback)(u8int *buf, u16int size));
+extern void vga_flush();
+extern void vga_buffer_put_char(char c);
+extern void vga_buffer_put_str(char *str);
 
 #endif
