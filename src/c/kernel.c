@@ -29,27 +29,6 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
-	/* works. this shows that the interrupts are working, and the timer is keeping track of system up time.
-	for (;;)
-	{
-		u32int count = get_tick();
-		put_str("Tick ");
-		put_dec(count);
-		put_str(" !\n");
-	}
-	*/
-	
-	/* works. this shows that the timer is working and we can make the machine wait
-	put_str("Current tick is ");
-	put_dec(get_tick());
-	put_str("\nWaiting 1000 ticks");
-	u32int end_tick = get_tick() + 1000;
-	while (get_tick() < end_tick) {}
-	put_str("\nDone.");
-	put_str("\nCurrent tick is ");
-	put_dec(get_tick());
-	*/
-	
 	vga_buffer_put_char(terminal_seperator);
 	
 	for (;;)
@@ -81,10 +60,11 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 					token[token_size] = terminal_buffer[token_size];
 				}
 				
-				vga_buffer_put_str("\n");
+				vga_buffer_put_str("\n");	// this line needs to come out
 				vga_buffer_put_str(token); // works
 				
 				// this is where i evaluate the token, and get ready to send the control elsewhere.
+				// i need to make a string comparison function, and then use if/else if/else to find a hook that the kernel can run.
 				
 				// clear the buffer.
 				memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE);
@@ -116,7 +96,6 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 void kernel_keyboard_handler(u8int *buf, u16int size)
 {
 	for (int i = 0; i < size; i++)
-		//vga_buffer_put_char((char) buf[i]); // this now needs to go to an input buffer
 		terminal_buffer[terminal_buffer_length++] = (char) buf[i];
 }
 
