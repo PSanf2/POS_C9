@@ -24,7 +24,7 @@ KHOME, KUP, KPGUP, '-', KLEFT, '5',   KRIGHT, '+', KEND, KDOWN, KPGDN, KINS, KDE
 
 // keyboard buffer
 static u8int keyboard_buffer[KEYBOARD_BUFFER_SIZE];
-static u16int buffer_length = 0; // buffer size is 4096 bytes, which can be expressed w/ 13 bits, so we can use a variable of 16 bits to keep track of the buffer size.
+static u16int keyboard_buffer_length = 0; // buffer size is 4096 bytes, which can be expressed w/ 13 bits, so we can use a variable of 16 bits to keep track of the buffer size.
 static void (*keyboard_handler)(u8int *buf, u16int size) = NULL; // this is a function that lives in the kernel which actually takes care of what to do w/ the input i recieve
 
 void keyboard_set_handler(void (*callback)(u8int *buf, u16int size))
@@ -35,14 +35,14 @@ void keyboard_set_handler(void (*callback)(u8int *buf, u16int size))
 // this is what disables the interrupts and calls the function in kernel.c to put the buffered data on the screen
 void keyboard_flush()
 {
-	if (buffer_length > 0)
+	if (keyboard_buffer_length > 0)
 	{
 		disable_interrupts();
 		if (keyboard_handler != NULL)
 		{
-			keyboard_handler(keyboard_buffer, buffer_length);
+			keyboard_handler(keyboard_buffer, keyboard_buffer_length);
 		}
-		buffer_length = 0;
+		keyboard_buffer_length = 0;
 		enable_interrupts();
 	}
 }
@@ -76,13 +76,13 @@ void keyboard_interrupt_handler(__attribute__ ((unused)) registers regs)
 		}
 		if (shiftKeyDown)
 		{
-			keyboard_buffer[buffer_length++] = asciiShift[scancode];
+			keyboard_buffer[keyboard_buffer_length++] = asciiShift[scancode];
 		}
 		else
 		{
-			keyboard_buffer[buffer_length++] = asciiNonShift[scancode];
+			keyboard_buffer[keyboard_buffer_length++] = asciiNonShift[scancode];
 		}
-		if (buffer_length == KEYBOARD_BUFFER_SIZE)
+		if (keyboard_buffer_length == KEYBOARD_BUFFER_SIZE)
 		{
 			keyboard_flush();
 		}

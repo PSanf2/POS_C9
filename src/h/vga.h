@@ -33,5 +33,5 @@ extern void vga_set_handler(void (*callback)(u8int *buf, u16int size));
 extern void vga_flush();
 extern void vga_buffer_put_char(char c);
 extern void vga_buffer_put_str(char *str);
-
+extern void clear_line();
 #endif
