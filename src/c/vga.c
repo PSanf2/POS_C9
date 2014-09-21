@@ -199,3 +199,32 @@ void vga_buffer_put_str(char *str)
 		vga_buffer_put_char(str[i++]);
 	}
 }
+
+void vga_buffer_put_dec(u32int n)
+{
+	if (n == 0)
+    {
+        vga_buffer_put_char('0');
+        return;
+    }
+
+    s32int acc = n;
+    char c[32];
+    int i = 0;
+    while (acc > 0)
+    {
+        c[i] = '0' + acc % 10;
+        acc /= 10;
+        i++;
+    }
+    c[i] = 0;
+
+    char c2[32];
+    c2[i--] = 0;
+    int j = 0;
+    while(i >= 0)
+    {
+        c2[i--] = c[j++];
+    }
+    vga_buffer_put_str(c2);
+}

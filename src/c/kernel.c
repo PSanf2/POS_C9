@@ -35,7 +35,9 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	{
 		// this is the main loop of the kernel
 		keyboard_flush();
-
+		
+		// this section is starting to come together, but the whole thing is full if freaking bugs.
+		
 		if (terminal_buffer_length > 0)
 		{
 			if (terminal_buffer[terminal_buffer_length - 1] == '\n')
@@ -60,11 +62,85 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 					token[token_size] = terminal_buffer[token_size];
 				}
 				
-				vga_buffer_put_str("\n");	// this line needs to come out
-				vga_buffer_put_str(token); // works
+				
+				/*
+				// shows that we've succcssfully gotten the token, and gotten it correctly.
+				vga_buffer_put_str("\n");
+				vga_buffer_put_str(token);	// works, prints the token.
+				
+				vga_buffer_put_str("\n");
+				vga_buffer_put_str(terminal_buffer); // works, prints the entire contents of the buffer.
+				
+				vga_buffer_put_str("\n");
+				vga_buffer_put_str(&terminal_buffer[token_size + 1]); // works, prints the contents of everything after the token.
+				*/
+				
+				// testing my string comparison function.
+				/* they all seem to work
+				string a = "foo";
+				string b = "foo";
+				string c = "bar";
+				string d = "baz";
+				string e = "foobar";
+				
+				vga_buffer_put_str("\n");
+				vga_buffer_put_dec(strcmp(a, b));
+				
+				vga_buffer_put_str("\n");
+				vga_buffer_put_dec(strcmp(a, c));
+				
+				vga_buffer_put_str("\n");
+				if (strcmp(c, a) == -1)
+				{
+					vga_buffer_put_str("-1");
+				}
+				
+				vga_buffer_put_str("\n");
+				if (strcmp(d, e) == -1)
+				{
+					vga_buffer_put_str("-1");
+				}
+				
+				vga_buffer_put_str("\n");
+				vga_buffer_put_dec(strcmp(e, d));
+				*/
 				
 				// this is where i evaluate the token, and get ready to send the control elsewhere.
 				// i need to make a string comparison function, and then use if/else if/else to find a hook that the kernel can run.
+				// this is screwed up some how. when I attempt to use this i get anomylous outputs.
+					// things being printed for no apparent reason
+					// characters not being printed.
+				
+				if (strcmp((string) token, "echo") == 0)
+				{
+					vga_buffer_put_str("\n");
+					vga_buffer_put_str(&terminal_buffer[token_size + 1]);
+					vga_buffer_put_str("\n");
+				}
+				else if (strcmp((string) token, "ticks") == 0)
+				{
+					vga_buffer_put_str("\n");
+					vga_buffer_put_dec(get_tick());
+					vga_buffer_put_str("\n");
+				}
+				// there's an issue w/ how i'm doing this.
+				// if i don't include the new line statement then the terminal character ends up pushed over about
+				// two tabs worth of space. if i leave the new line, then the terminal cursor is one line to low, and not at the top of the screen.
+				else if (strcmp((string) token, "clear") == 0)
+				{
+					vga_buffer_put_str("\n");
+					clear_screen();
+				}
+				// else if () {}
+				// else if () {}
+				else
+				{
+					vga_buffer_put_str("\n");
+					vga_buffer_put_str("Unknown command.");
+					vga_buffer_put_str("\n");
+				}
+				
+				
 				
 				// clear the buffer.
 				memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE);
@@ -72,8 +148,20 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 				terminal_last_put = 0;
 				
 				// move the cursor to the next line, and reprint the terminal character
-				vga_buffer_put_str("\n");
+				//vga_buffer_put_str("\n");
 				vga_buffer_put_char(terminal_seperator);
+			}
+			else if (terminal_buffer[terminal_buffer_length - 1] == '\b')
+			{
+				if (terminal_buffer_length > 0)
+				{
+					vga_buffer_put_str("\b \b");
+					terminal_buffer_length = terminal_buffer_length - 2;
+				}
+				if (terminal_last_put > 0)
+				{
+					terminal_last_put--;
+				}
 			}
 			else
 			{

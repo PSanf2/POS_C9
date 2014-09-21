@@ -30,6 +30,7 @@ typedef void (*isr)(registers);
 #define enable_interrupts() asm volatile("sti")
 #define disable_interrupts() asm volatile("cli")
 
+#include <string.h>
 #include <gdt.h>
 #include <idt.h>
 #include <isr.h>

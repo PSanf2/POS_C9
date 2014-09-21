@@ -34,4 +34,5 @@ extern void vga_flush();
 extern void vga_buffer_put_char(char c);
 extern void vga_buffer_put_str(char *str);
 extern void clear_line();
+extern void vga_buffer_put_dec(u32int n);
 #endif
