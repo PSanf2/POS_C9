@@ -30,7 +30,7 @@ typedef void (*isr)(registers);
 #define enable_interrupts() asm volatile("sti")
 #define disable_interrupts() asm volatile("cli")
 
-#include <string.h>
+#include <string.h>	// goes up top because it defines a datatype that can be used anywhere in the system.
 #include <gdt.h>
 #include <idt.h>
 #include <isr.h>
@@ -42,6 +42,7 @@ typedef void (*isr)(registers);
 #include <vga.h>
 #include <keyboard.h>
 
+void terminal();
 void kernel_keyboard_handler(u8int *buf, u16int size);
 void kernel_vga_handler(u8int *buf, u16int size);
 
