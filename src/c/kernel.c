@@ -18,10 +18,6 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	idt_initialize();
 	memset((u8int *) &interrupt_handler, 0, sizeof(isr) * 256);
 	
-	set_text_color(LIGHT_GREY, BLUE);
-	clear_screen();
-	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
-	
 	enable_interrupts();
 	timer_initialize(100);
 	keyboard_initialize();
@@ -29,6 +25,12 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
+	// i need to set the page fault handler
+	// i need to initialize paging
+	
+	set_text_color(LIGHT_GREY, BLUE);
+	clear_screen();
+	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
 	vga_buffer_put_char(terminal_seperator);
 	
 	for (;;)
@@ -44,6 +46,14 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	return 0;
 }
 
+/*
+ * This works, but will eventually need to be updated, and expanded.
+ * I shouldn't be using a giant if/else if/else to decide what to do.
+ * I should have a list of available commands in memory, and see if the typed command is on that list
+ * The list should point to the function that will handle that command.
+ * these commands might not be in active memory. they could point to something stored on the hard drive that needs to be loaded into memory
+ * before it's executed.
+ */
 void terminal()
 {
 	// if there's anything in the buffer
@@ -90,8 +100,8 @@ void terminal()
 			// two tabs worth of space. if i leave the new line, then the terminal cursor is one line to low, and not at the top of the screen.
 			else if (strcmp((string) token, "clear") == 0)
 			{
-				vga_buffer_put_str("\n");
 				clear_screen();
+				vga_buffer_put_str("\r");
 			}
 			// else if () {}
 			// else if () {}
@@ -148,4 +158,9 @@ void kernel_vga_handler(u8int *buf, u16int size)
 {
 	for (int i = 0; i < size; i++)
 		put_char((char) buf[i]);
+}
+
+void kernel_page_fault_handler(u8int *buf, u16int size)
+{
+	
 }

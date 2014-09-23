@@ -10,15 +10,9 @@
 s32int strcmp(const string str1, const string str2)
 {
 	s32int val = 0;
-	int i = 0;
+	s32int i = 0;
 	while (str1[i] != '\0')
 	{
-		if (str2[i] == '\0')
-		{
-			val = -1;
-			break;
-		}
-		
 		if (str1[i] > str2[i])
 		{
 			val = 1;
@@ -33,3 +27,5 @@ s32int strcmp(const string str1, const string str2)
 	}
 	return val;
 }
+
+// i need a string append function that will tag one string on to another.
