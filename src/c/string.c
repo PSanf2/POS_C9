@@ -28,4 +28,31 @@ s32int strcmp(const string str1, const string str2)
 	return val;
 }
 
+u16int strlen(const string str)
+{
+	int i = 0;
+	while (str[i] != '\0')
+	{
+		i++;
+	}
+	return i;
+}
+
+string strcpy(string dest, const string source)
+{
+	int i = 0;
+	while(source[i] != '\0') {
+		dest[i] = source[i];
+		i++;
+	}
+	dest[i+1] = '\0';
+	return dest;
+}
+
+string strcat(string str1, const string str2)
+{
+	strcpy(str1 + strlen(str1), str2);
+	return str1;
+}
+
 // i need a string append function that will tag one string on to another.

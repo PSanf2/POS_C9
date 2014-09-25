@@ -36,7 +36,7 @@ void paging_initialize()
 	u32int mem_end_page = 0x1000000;
 	nframes = mem_end_page / 0x1000;
 	frames = (u32int *) paging_malloc_int(INDEX_FROM_BIT(nframes), 0, 0);
-	memset((u8int *) frames, 0, INDEX_FROM_BIT(nframes));
+	memset32(frames, 0, INDEX_FROM_BIT(nframes));
 	
 	kernel_directory = (page_directory *) paging_malloc_int(sizeof(page_directory), 1, 0);
 	current_directory = kernel_directory;
@@ -48,7 +48,7 @@ void paging_initialize()
 		i += 0x1000;
 	}
 	
-	register_interrupt_handler(14, page_fault_interrupt_handler);
+	register_interrupt_handler(14, &page_fault_interrupt_handler); // i think the issue is somewhere in here. the debugger never gets to switch_page_directory()
 	
 	switch_page_directory(kernel_directory);
 }
@@ -130,6 +130,8 @@ void alloc_frame(page *my_page, int is_kernel, int is_writeable)
 		{
 			// PANIC! no free frames.
 			// i need to put in the panic function.
+			string msg = "PANIC! No free frames.";
+			page_fault_handler((u8int *) msg, strlen(msg));
 		}
 		set_frame(idx * 0x1000);
 		my_page->present = 1;
@@ -147,4 +149,55 @@ void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 void page_fault_interrupt_handler(__attribute__ ((unused)) registers regs)
 {
 	// i need to gather the information, put it in a string, and use the callback to get the kernel to handle it.
+	u32int faulting_address;
+	asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
+	
+	// The error code gives us details of what happened.
+    int present   = !(regs.err_code & 0x1); // Page not present
+    int rw = regs.err_code & 0x2;           // Write operation?
+    int us = regs.err_code & 0x4;           // Processor was in user-mode?
+    int reserved = regs.err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
+    int id = regs.err_code & 0x10;          // Caused by an instruction fetch?
+    
+    string msg = "";
+    
+    strcat(msg, "PAGE FAULT (");
+    if (present)
+    {
+		strcat(msg, "present ");
+	}
+	if (rw)
+	{
+		strcat(msg, "read-only ");
+	}
+	if (us)
+	{
+		strcat(msg, "user-mode ");
+	}
+	if (reserved)
+	{
+		strcat(msg, "reserved ");
+	}
+	if (id)
+	{
+		strcat(msg, "id ");
+	}
+    strcat(msg, ") at ");
+    strcat(msg, (string) &faulting_address);
+    strcat(msg, "\n");
+	
+	page_fault_handler((u8int *) msg, strlen(msg));
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

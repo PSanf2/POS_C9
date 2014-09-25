@@ -26,7 +26,9 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
 	// i need to set the page fault handler
+	page_fault_set_handler(kernel_page_fault_handler);
 	// i need to initialize paging
+	paging_initialize(); // this is causing the system to continually reboot
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
@@ -162,5 +164,6 @@ void kernel_vga_handler(u8int *buf, u16int size)
 
 void kernel_page_fault_handler(u8int *buf, u16int size)
 {
-	
+	kernel_vga_handler(buf, size);
+	for (;;) {}
 }

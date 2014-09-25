@@ -14,3 +14,10 @@ void memset(u8int *dest, u8int val, u32int len)
 	for (; len != 0; len--)
 		*temp++ = val;
 }
+
+void memset32(u32int *dest, u32int val, u32int len)
+{
+	u32int *temp = dest;
+	for (; len != 0; len--)
+		*temp++ = val;
+}

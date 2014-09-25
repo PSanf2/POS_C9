@@ -4,6 +4,7 @@
 #include <system.h>
 #include <isr.h>
 #include <memory.h>
+#include <string.h>
 
 struct page_struct
 {
@@ -39,6 +40,7 @@ extern u32int paging_malloc_int(u32int size, int align, u32int *phys);
 extern void alloc_frame(page *my_page, int is_kernel, int is_writeable);
 extern page *get_page(u32int address, int make, page_directory *dir);
 extern void switch_page_directory(page_directory *dir);
+extern void page_fault_set_handler(void (*callback)(u8int *buf, u16int size));
 extern void page_fault_interrupt_handler(__attribute__ ((unused)) registers regs);
 
 #endif
