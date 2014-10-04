@@ -18,7 +18,7 @@ LINKER_SCRIPT = linker.ld
 GRUB_CFG = grub.cfg
 
 # Flags
-COMPILER_FLAGS = -c -ffreestanding -O2 -Wall -Wextra -std=gnu99 -ggdb -I src/h
+COMPILER_FLAGS = -c -ffreestanding -O2 -Wall -Wextra -std=gnu99 -ggdb -isystem src/h
 LINKER_FLAGS = -T $(LINKER_SCRIPT) -ffreestanding -O2 -nostdlib -lgcc -ggdb
 
 ########################################################################

@@ -2,10 +2,6 @@
 
 static void (*page_fault_handler)(u8int *buf, u16int size) = NULL;
 
-// end is defined in the linker script
-extern u32int end;
-static u32int placement_address = (u32int) &end;
-
 void paging_initialize()
 {
 

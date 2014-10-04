@@ -10,7 +10,7 @@ static u16int terminal_buffer_length = 0;
 static u16int terminal_last_put = 0;
 static char terminal_seperator = '>';
 
-int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int initial_stack)
+int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
 	initial_esp = initial_stack;
 	
@@ -24,6 +24,9 @@ int kernel_main(__attribute__ ((unused)) struct multiboot *mboot_ptr, u32int ini
 	keyboard_set_handler(kernel_keyboard_handler);
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
+	
+	// i need to get the memory management going.
+	memory_manager_initialize(mboot_ptr);	// wtf does this cause a warning?
 	
 	// i need to set the page fault handler
 	// i need to initialize paging

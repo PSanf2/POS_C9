@@ -15,13 +15,46 @@ indent_mode=2
 [project]
 name=Patricks_OS
 base_path=/media/sf_Operating_System_Stuff/POS Attempts/POS_C9
+description=
 
 [long line marker]
 long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
+current_page=14
+FILE_NAME_0=0;Conf;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fgrub.cfg;0;4
+FILE_NAME_1=245;None;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Flinker.ld;0;4
+FILE_NAME_2=456;Make;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fmakefile;0;4
+FILE_NAME_3=467;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fboot.as;0;4
+FILE_NAME_4=0;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fgdt.as;0;4
+FILE_NAME_5=0;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fidt.as;0;4
+FILE_NAME_6=0;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Firq.as;0;4
+FILE_NAME_7=0;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fisr.as;0;4
+FILE_NAME_8=42;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fgdt.c;0;4
+FILE_NAME_9=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fidt.c;0;4
+FILE_NAME_10=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Firq.c;0;4
+FILE_NAME_11=62;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fisr.c;0;4
+FILE_NAME_12=856;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkernel.c;0;4
+FILE_NAME_13=2007;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkeyboard.c;0;4
+FILE_NAME_14=3372;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory.c;0;4
+FILE_NAME_15=116;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fpaging.c;0;4
+FILE_NAME_16=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fport.c;0;4
+FILE_NAME_17=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fstring.c;0;4
+FILE_NAME_18=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Ftimer.c;0;4
+FILE_NAME_19=4005;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fvga.c;0;4
+FILE_NAME_20=245;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fgdt.h;0;4
+FILE_NAME_21=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fidt.h;0;4
+FILE_NAME_22=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Firq.h;0;4
+FILE_NAME_23=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fisr.h;0;4
+FILE_NAME_24=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fkeyboard.h;0;4
+FILE_NAME_25=253;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmemory.h;0;4
+FILE_NAME_26=110;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fpaging.h;0;4
+FILE_NAME_27=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fport.h;0;4
+FILE_NAME_28=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fstring.h;0;4
+FILE_NAME_29=1019;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fsystem.h;0;4
+FILE_NAME_30=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Ftimer.h;0;4
+FILE_NAME_31=753;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fvga.h;0;4
 
 [VTE]
-last_dir=/home/patrick
+last_dir=/media/sf_Operating_System_Stuff/POS Attempts/POS_C9
