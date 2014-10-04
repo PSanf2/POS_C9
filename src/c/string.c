@@ -55,4 +55,12 @@ string strcat(string str1, const string str2)
 	return str1;
 }
 
-// i need a string append function that will tag one string on to another.
+extern u32int str_to_u32int(const string str)
+{
+	u32int result = 0;
+	for (int i = 0; i < strlen(str); i++)
+	{
+		result = result * 10 + (str[i] - '0');
+	}
+	return result;
+}

@@ -1,6 +1,13 @@
 #include <memory.h>
 #include <vga.h>
 
+/*
+ * This is my implementation of a first-fit memory manager.
+ * All of the functions defined in this file assume that require variables
+ * have been initialized properly. It is the kernel programmer's responsibility
+ * to avoid doing stupid things.
+ */
+
 // used for determining where the kernel ends
 extern u32int end;
 static u32int kernel_end = (u32int) &end;
@@ -52,6 +59,13 @@ void print_forwards(list *myList)
 		print_node(myNode);
 		myNode = myNode->next;
 	}
+}
+
+void print_mem_state()
+{
+	// this is mainly for debugging. it's called by the kernel to print
+	// the state of the free memory list on demand.
+	print_forwards(free_mem);
 }
 
 void insertAfter(list *myList, node *myNode, node *newNode)
@@ -194,9 +208,43 @@ void compact_free()
 	
 }
 
-u32int *malloc(__attribute__((unused)) u32int bytes)
+u32int *malloc(u32int bytes)
 {
-	return 0;
+	/*
+	 * This assumes that the free memory list has been properly initialized.
+	 * 
+	 * I need to go over the list until I find a node that's larger than bytes.
+	 * 	If there isn't a free node large enough then I'll return NULL.
+	 * I need to split that node.
+	 * I need to remove the node from the list.
+	 * I need to return a pointer to the node.
+	 */
+	
+	u32int result = NULL;
+	
+	node *candidate = free_mem->first;
+	
+	do
+	{
+		if ((u32int) candidate->size >= bytes)
+		{
+			
+			split_free(candidate, bytes);
+			
+			remove(free_mem, candidate);
+			candidate->prev = NULL;
+			candidate->next = NULL;
+			
+			result = (u32int) candidate->data;
+			break;
+		}
+		else
+		{
+			candidate = candidate->next;
+		}
+	} while (candidate != NULL);
+	
+	return (u32int *) result;
 }
 
 void free(__attribute__((unused)) u32int *addr)
@@ -258,8 +306,5 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	
 	// put it on the free memory list
 	insertBeginning(free_mem, node_ptr);
-	
-	// brag about it.
-	print_forwards(free_mem);
-	
+		
 }

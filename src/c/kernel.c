@@ -106,6 +106,26 @@ void terminal()
 				clear_screen();
 				vga_buffer_put_str("\r");
 			}
+			else if (strcmp((string) token, "mem_state") == 0)
+			{
+				print_mem_state();
+			}
+			else if (strcmp((string) token, "malloc") == 0)
+			{
+				// get the input token, and convert it to a u32int.
+				u32int bytes = str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				u32int *myMem = malloc(bytes);
+				
+				vga_buffer_put_str("\nAllocated memory starts at ");
+				vga_buffer_put_dec((u32int) myMem);
+				
+				vga_buffer_put_str("\n");
+			}
+			else if (strcmp((string) token, "free") == 0)
+			{
+				vga_buffer_put_str("\nomgwtfbbq\n");
+			}
 			// else if () {}
 			// else if () {}
 			else

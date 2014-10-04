@@ -35,5 +35,6 @@ extern void memset(u8int *dest, u8int val, u32int len);
 void memory_manager_initialize(struct multiboot *mboot_ptr);
 u32int *malloc(u32int bytes);
 void free(u32int *addr);
+void print_mem_state();
 
 #endif
