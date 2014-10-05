@@ -55,7 +55,7 @@ string strcat(string str1, const string str2)
 	return str1;
 }
 
-extern u32int str_to_u32int(const string str)
+u32int str_to_u32int(const string str)
 {
 	u32int result = 0;
 	for (int i = 0; i < strlen(str); i++)

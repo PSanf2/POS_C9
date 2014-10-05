@@ -36,5 +36,6 @@ void memory_manager_initialize(struct multiboot *mboot_ptr);
 u32int *malloc(u32int bytes);
 void free(u32int *addr);
 void print_mem_state();
+void print_node_state(u32int *myNodeAddr);
 
 #endif

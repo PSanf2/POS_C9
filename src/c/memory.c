@@ -17,8 +17,6 @@ static u32int first_mem_addr;	// the first address after the kernel
 static u32int last_mem_addr;	// this should be the address of the last byte of high memory available.
 static u32int available_mem;	// this is the amount of memory available to the system.
 
-static u32int node_size = sizeof(node);
-
 static list *free_mem;
 
 void memcpy(u8int *dest, const u8int *src, u32int len)
@@ -66,6 +64,13 @@ void print_mem_state()
 	// this is mainly for debugging. it's called by the kernel to print
 	// the state of the free memory list on demand.
 	print_forwards(free_mem);
+}
+
+void print_node_state(u32int *myNodeAddr)
+{
+	vga_buffer_put_str("\nMemory manager printing node at address ");
+	vga_buffer_put_dec((u32int) myNodeAddr);
+	print_node((node *) myNodeAddr);
 }
 
 void insertAfter(list *myList, node *myNode, node *newNode)
@@ -127,23 +132,40 @@ void insertEnd(list *myList, node *newNode)
 
 void remove(list *myList, node *myNode)
 {
+	vga_buffer_put_str("\nRemoving node ");
+	vga_buffer_put_dec((u32int) myNode);
+	vga_buffer_put_str("\nPrev node is ");
+	vga_buffer_put_dec((u32int) myNode->prev);
+	
 	if (myNode->prev == NULL)
 	{
 		myList->first = myNode->next;
+		vga_buffer_put_str("\nmylist first is now ");
+		vga_buffer_put_dec((u32int) myNode->next);
 	}
 	else
 	{
 		myNode->prev->next = myNode->next;
+		vga_buffer_put_str("\nmynode prev next is now ");
+		vga_buffer_put_dec((u32int) myNode->next);
 	}
+	
+	vga_buffer_put_str("\nnext node is ");
+	vga_buffer_put_dec((u32int) myNode->next);
 	
 	if (myNode->next == NULL)
 	{
 		myList->last = myNode->prev;
+		vga_buffer_put_str("\nmylist last is now ");
+		vga_buffer_put_dec((u32int) myNode->prev);
 	}
 	else
 	{
 		myNode->next->prev = myNode->prev;
+		vga_buffer_put_str("\nmynode next prev is now ");
+		vga_buffer_put_dec((u32int) myNode->prev);
 	}
+	vga_buffer_put_str("\n");
 }
 
 node *split_free(node *myNode, u32int bytes)
@@ -189,16 +211,16 @@ node *split_free(node *myNode, u32int bytes)
 	
 	//print_node(myNode);
 	
-	node *newNode = (node *) myNode + node_size + bytes + 1;
+	node *newNode = (node *) myNode + sizeof(node) + bytes + 1;
 	
 	newNode->prev = NULL;
-	newNode->data = (u32int *) newNode + node_size;
-	newNode->size = (u32int *) myNode->size - bytes - node_size;
+	newNode->data = (u32int *) newNode + sizeof(node);
+	newNode->size = (u32int *) myNode->size - bytes - sizeof(node);
 	newNode->next = NULL;
 	
 	myNode->size = (u32int *) bytes;
 	
-	insertAfter(free_mem, myNode, newNode);
+	//insertAfter(free_mem, myNode, newNode);
 	
 	return newNode;
 }
@@ -229,7 +251,9 @@ u32int *malloc(u32int bytes)
 		if ((u32int) candidate->size >= bytes)
 		{
 			
-			split_free(candidate, bytes);
+			node *newNode = split_free(candidate, bytes);
+			insertAfter(free_mem, candidate, newNode);
+			
 			
 			remove(free_mem, candidate);
 			candidate->prev = NULL;
@@ -247,9 +271,57 @@ u32int *malloc(u32int bytes)
 	return (u32int *) result;
 }
 
-void free(__attribute__((unused)) u32int *addr)
+void free(u32int *addr)
 {
+	vga_buffer_put_str("\nMemory manager freeing allocation starting at ");
+	vga_buffer_put_dec((u32int) addr);
 	
+	node *myNode;
+	if ((u32int) addr == (first_mem_addr + 256))
+	{
+		vga_buffer_put_str("\nThat's the first node");
+		myNode = (node *) ((u32int) addr - 256);
+	}
+	else
+	{
+		vga_buffer_put_str("\nNot the first node");
+		myNode = (node *) ((u32int) addr - 64);
+	}
+	
+	// i need to get the node data for the memory allocation
+	//node *myNode = (node *) (addr - sizeof(node));
+	
+	vga_buffer_put_str("\nMy node starts at ");
+	vga_buffer_put_dec((u32int) myNode);
+	
+	print_node(myNode);
+	
+	// i need to find the proper place to put the node in the free memory
+	node *candidate = free_mem->first;
+	
+	vga_buffer_put_str("\nFirst candidate node at ");
+	vga_buffer_put_dec((u32int) candidate);
+	
+	print_node(candidate);
+	do
+	{
+		if ((u32int) candidate > (u32int) myNode)
+		{
+			vga_buffer_put_str("\nCandidate node address greater than My node address.");
+			
+			insertBefore(free_mem, candidate, myNode);
+			
+			vga_buffer_put_str("\nMy node placed before candidate node.");
+			
+			break;
+		}
+		vga_buffer_put_str("\nNext candidate node at ");
+		vga_buffer_put_dec((u32int) candidate->next);
+		candidate = candidate->next;
+		
+	} while (candidate != NULL);
+	
+	vga_buffer_put_str("\nLooping done.");
 }
 
 void memory_manager_initialize(struct multiboot *mboot_ptr)
@@ -300,8 +372,8 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	
 	// set the values
 	node_ptr->prev = NULL;
-	node_ptr->data = (u32int *) (node_ptr + node_size);
-	node_ptr->size = (u32int *) (available_mem - node_size);
+	node_ptr->data = (u32int *) (node_ptr + sizeof(node));
+	node_ptr->size = (u32int *) (available_mem - sizeof(node));
 	node_ptr->next = NULL;
 	
 	// put it on the free memory list
