@@ -126,8 +126,8 @@ void terminal()
 				
 				u32int myAddr = str_to_u32int(&terminal_buffer[token_size + 1]);
 				
-				vga_buffer_put_str("\nKernel freeing memory from ");
-				vga_buffer_put_dec(myAddr);
+				//vga_buffer_put_str("\nKernel freeing memory from ");
+				//vga_buffer_put_dec(myAddr);
 				
 				free((u32int *) myAddr);
 				
