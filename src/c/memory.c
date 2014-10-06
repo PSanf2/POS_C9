@@ -216,9 +216,68 @@ node *split_free(node *myNode, u32int bytes)
 	return newNode;
 }
 
-void compact_free()
+void compact_free(node *myNode)
 {
+	// i need to go over the list looking at each node's data address and size.
+	// if the node's data address + size = the next node then the free node in question, and the one following it, are adjacent.
+	// if two free nodes are adjacent then i need to compact them together.
 	
+	/*u32int newSize = (u32int) myNode->size;
+	newSize = newSize - bytes;
+	newSize = newSize - sizeof(node);
+	 */
+	 
+	 node *nextNode = myNode->next;
+	 
+	 u32int newSize = (u32int) myNode->size;
+	 u32int nextSize = (u32int) nextNode->size;
+	 newSize = newSize + nextSize + 64;
+	 
+	 myNode->size = (u32int *) newSize;
+	 
+	 remove(free_mem, nextNode);
+}
+
+node *search_adjacent_free_node()
+{
+	// this function will for the first node that can be compacted with the node that imemdiately follows it.
+	
+	node *result = NULL;
+	
+	node *candidate = free_mem->first;
+	
+	do
+	{
+		if (((u32int) candidate->data + (u32int) candidate->size) == (u32int) candidate->next)
+		{
+			result = candidate; 
+			break;
+		}
+		
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+	
+}
+
+void compact_all_free()
+{
+	// this will repeatedly go over the list, compacting all adjacent free nodes
+	
+	node *myNode = search_adjacent_free_node();
+	
+	while ((u32int) myNode != NULL)
+	{
+		compact_free(myNode);
+		myNode = search_adjacent_free_node();
+	}
+	
+}
+
+void compact_free_mem()
+{
+	compact_all_free();
 }
 
 u32int *malloc(u32int bytes)
@@ -253,7 +312,7 @@ u32int *malloc(u32int bytes)
 			// most of the time it comes back as 16, but is blatantly wrong in some instances.
 			// (the node data type containts two u32int pointers, and two pointers to other nodes making it 128 bytes on the first node, and 64 on all others).
 			// i think this has to do with how a node was most recently initialized before the sizeof() function is called.
-			// to overcome this I need to use constant values at select places to adjust the values of pointers to bump them back to the right place.
+			// to overcome this I need to use constant values at select places to adjust the values of47 pointers to bump them back to the right place.
 			// the ultimate result is that if a node needs to be split to allocate some memory, and the resulting node is less than 48 bytes, then the size
 			// of the new node will not be calculated correctly, cause bad things to happen, result in memory leaks whenever new memory is allocated pr freed, and
 			// ultimately corrupt the memory. You'll end up with nodes that either have no size information, or think the node address is also the size of the

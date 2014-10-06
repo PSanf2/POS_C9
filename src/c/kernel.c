@@ -140,6 +140,11 @@ void terminal()
 				
 				vga_buffer_put_str("\n");
 			}
+			else if (strcmp((string) token, "compactFree") == 0)
+			{
+				compact_free_mem();
+				vga_buffer_put_str("\n");
+			}
 			// else if () {}
 			// else if () {}
 			else
