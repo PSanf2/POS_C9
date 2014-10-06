@@ -211,12 +211,12 @@ node *split_free(node *myNode, u32int bytes)
 	
 	//print_node(myNode);
 	
-	vga_buffer_put_str("\nSplitting node ");
-	vga_buffer_put_dec((u32int) myNode);
-	vga_buffer_put_str("\nI need a node of size ");
-	vga_buffer_put_dec(bytes);
-	vga_buffer_put_str("\nSize of node type is ");
-	vga_buffer_put_dec(sizeof(node));
+	//vga_buffer_put_str("\nSplitting node ");
+	//vga_buffer_put_dec((u32int) myNode);
+	//vga_buffer_put_str("\nI need a node of size ");
+	//vga_buffer_put_dec(bytes);
+	//vga_buffer_put_str("\nSize of node type is ");
+	//vga_buffer_put_dec(sizeof(node));
 	
 	u32int newNodeAddr;
 	
@@ -236,19 +236,37 @@ node *split_free(node *myNode, u32int bytes)
 	//vga_buffer_put_str("\nnewNode pointer at ");
 	//vga_buffer_put_dec((u32int) newNode);
 	
-	vga_buffer_put_str("\nmyNode");
-	print_node(myNode);
+	//vga_buffer_put_str("\nmyNode");
+	//print_node(myNode);
 	
 	newNode->prev = NULL;
 	newNode->data = (u32int *) newNode + sizeof(node);
 	
+	u32int newSize = (u32int) myNode->size;
+	//vga_buffer_put_str("\nmyNode size ");
+	//vga_buffer_put_dec(newSize);
+	
+	newSize = newSize - bytes;
+	//vga_buffer_put_str("\nmyNode size minus bytes ");
+	//vga_buffer_put_dec(newSize);
+	
+	newSize = newSize - sizeof(node);
+	//vga_buffer_put_str("\nmyNode size minus sizeof node type ");
+	//vga_buffer_put_dec(newSize);
+	
+	newSize = newSize - 48;
+	//vga_buffer_put_str("\nmyNode size minus constant correction ");
+	//vga_buffer_put_dec(newSize);
+	
+	newNode->size = (u32int *) newSize;
+	
 	// i probably need to bring the size into an integer, to the arithmatic on it, and then put the int value into the pointer.
-	newNode->size = (u32int *) ((u32int) myNode->size) - bytes - sizeof(node); // something's wrong w/ this line. the size isn't always being saved properly.
+	//newNode->size = (u32int *) ((u32int) myNode->size) - bytes - sizeof(node); // something's wrong w/ this line. the size isn't always being saved properly.
 	
 	newNode->next = NULL;
 	
-	vga_buffer_put_str("\nnewNode");
-	print_node(newNode);
+	//vga_buffer_put_str("\nnewNode");
+	//print_node(newNode);
 	
 	myNode->size = (u32int *) bytes; // this is what's wrong?
 	
@@ -263,7 +281,7 @@ node *split_free(node *myNode, u32int bytes)
 	//print_node(newNode);
 	
 	
-	vga_buffer_put_str("\n");
+	//vga_buffer_put_str("\n");
 	
 	return newNode;
 }
