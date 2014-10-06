@@ -201,8 +201,6 @@ node *split_free(node *myNode, u32int bytes)
 	newSize = newSize - bytes;
 	newSize = newSize - sizeof(node);
 	
-	//newSize = newSize - 48;
-	
 	if (newSize >= 48)
 	{
 		newSize = newSize - 48;
@@ -249,7 +247,22 @@ u32int *malloc(u32int bytes)
 			result = (u32int) candidate->data;
 			break;
 		}
-		else if ((u32int) candidate->size > bytes)
+		// we need to make sure that the candidate node is at least 48 bytes larger than the requested size or else there will be memory leaks and corruption.
+		// the 48 is due to the pointer arithmetic that's needed to keep things straight on the list.
+		// i think the issue ultimately has to do with how sizeof() interprets the size of the node data type.
+			// most of the time it comes back as 16, but is blatantly wrong in some instances.
+			// (the node data type containts two u32int pointers, and two pointers to other nodes making it 128 bytes on the first node, and 64 on all others).
+			// i think this has to do with how a node was most recently initialized before the sizeof() function is called.
+			// to overcome this I need to use constant values at select places to adjust the values of pointers to bump them back to the right place.
+			// the ultimate result is that if a node needs to be split to allocate some memory, and the resulting node is less than 48 bytes, then the size
+			// of the new node will not be calculated correctly, cause bad things to happen, result in memory leaks whenever new memory is allocated pr freed, and
+			// ultimately corrupt the memory. You'll end up with nodes that either have no size information, or think the node address is also the size of the
+			// node (and making it appear that the node is much larger than it actually is).
+		// you can allocate memory as small as you want, but things get a little iffy for allocation requests of less than 128 bytes.
+		// things work for the most part, but some node occationally get a 0 size, and leak memory.
+		// if the node of free memory doesn't meet the minimum size requirements for the allocation then it's not a "fit," and going to the next
+		// node is still within the definition of "first fit."
+		else if ((u32int) candidate->size > (bytes + 48))
 		{
 			split_free(candidate, bytes);
 			remove(free_mem, candidate);
