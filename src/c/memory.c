@@ -183,6 +183,7 @@ node *split_free(node *myNode, u32int bytes)
 	
 	u32int newNodeAddr;
 	
+	// the math used in this if/else was arrived at through trial-and-error. 
 	if (myNode == free_mem->first)
 	{
 		newNodeAddr = (((u32int) myNode) + sizeof(node) + bytes + 1 - 17) + 256;
@@ -212,6 +213,17 @@ node *split_free(node *myNode, u32int bytes)
 	myNode->size = (u32int *) bytes;
 	
 	insertAfter(free_mem, myNode, newNode);
+	
+	// there's some kind of compounding error in the split operation. after the initial node is split, every subsequent split of the last node causes
+	// it to be 192 (3 * 64) bytes too large. To fix this we just make sure that the data + the size of the last node = the last memory address.
+	// if data + size > last mem addr then size = last mem addr - data
+	node *lastNode = free_mem->last;
+	u32int lastData = (u32int) lastNode->data;
+	u32int lastSize = (u32int) lastNode->size;
+	if ((lastData + lastSize) > last_mem_addr)
+	{
+		lastNode->size = (u32int *) (last_mem_addr - lastData);
+	}
 	
 	return newNode;
 }
