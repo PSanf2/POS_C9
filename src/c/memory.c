@@ -3,13 +3,13 @@
 
 /*
  * This is my implementation of a first-fit memory manager.
- * All of the functions defined in this file assume that require variables
+ * All of the functions defined in this file assume that required variables
  * have been initialized properly. It is the kernel programmer's responsibility
  * to avoid doing stupid things.
  */
 
 // used for determining where the kernel ends
-extern u32int end;
+extern u32int end;	// defined in the linker script.
 static u32int kernel_end = (u32int) &end;
 
 static u32int mem_upper_amount;	// this is the amount of high memory in kilobytes starting at the 1M mark.
@@ -17,8 +17,15 @@ static u32int first_mem_addr;	// the first address after the kernel
 static u32int last_mem_addr;	// this should be the address of the last byte of high memory available.
 static u32int available_mem;	// this is the amount of memory available to the system.
 
-static list *free_mem;
+static list *free_mem; // holds the list of information about which memory locations are free. anything that's not free has been allocated.
 
+/*
+ * These two functions are used to write to specific locations in memory.
+ * Mainly used by the kernel for working w/ buffers. also used in setting up the interrupts.
+ * The could be put elsewhere, maybe in the kernel even, and are included here becuase they
+ * directly deal with manipulating the memory.
+ */
+ 
 void memcpy(u8int *dest, const u8int *src, u32int len)
 {
 	const u8int *sp = (const u8int *) src;
@@ -34,8 +41,19 @@ void memset(u8int *dest, u8int val, u32int len)
 		*temp++ = val;
 }
 
+/*
+ * Functions for printing.
+ * These print functions should be taken out in later versions.
+ * I should use functions to return information, and let the calling
+ * code figure out how to get it to the user. These functions are included
+ * here at this time to meet the requirements of CSC 400 Assignment 5.
+ */
+
 void print_node(node *myNode)
 {
+	// used to print the information about a specific node in memory.
+	// if you give it a bad address you get bad information. garbage in, garbage out
+	
 	vga_buffer_put_str("\nNode at address ");
 	vga_buffer_put_dec((u32int) myNode);
 	vga_buffer_put_str("\nPrev: ");
@@ -51,6 +69,7 @@ void print_node(node *myNode)
 
 void print_forwards(list *myList)
 {
+	// used to print out the whole free memory list.
 	node *myNode = myList->first;
 	while (myNode != NULL)
 	{
@@ -61,14 +80,21 @@ void print_forwards(list *myList)
 
 void print_mem_state()
 {
+	// wrapper function that allows code from other files to print some things.
 	print_forwards(free_mem);
 }
 
 void print_node_state(u32int *myNodeAddr)
 {
+	// wrapper function for printing.
 	print_node((node *) myNodeAddr);
 }
 
+/*
+ * Functions for managing the doubly linked list that contains information
+ * about the free memory available.
+ */
+ 
 void insertAfter(list *myList, node *myNode, node *newNode)
 {
 	newNode->prev = myNode;
@@ -147,9 +173,14 @@ void remove(list *myList, node *myNode)
 	}
 }
 
+/*
+ * Functions that impliment the memory manager.
+ */
+
 node *split_free(node *myNode, u32int bytes)
 {
 	/*
+	 * this is used to split a node of free memory into two.
 	 * this will accept a free node as a parameter, and a u32int number.
 	 * this will split the given node at bytes, and return the address.
 	 * to the new node.
@@ -183,7 +214,9 @@ node *split_free(node *myNode, u32int bytes)
 	
 	u32int newNodeAddr;
 	
-	// the math used in this if/else was arrived at through trial-and-error. 
+	// the math used in this if/else was arrived at through trial-and-error, and has been demonstrated to work in qemu.
+	// i don't have a clue what causes the need for the -17, but it works. the need for the 256/64 is caused by the first
+	// node on the list having a big header, but every other node needing only 64 bytes.
 	if (myNode == free_mem->first)
 	{
 		newNodeAddr = (((u32int) myNode) + sizeof(node) + bytes + 1 - 17) + 256;
@@ -198,10 +231,16 @@ node *split_free(node *myNode, u32int bytes)
 	newNode->prev = NULL;
 	newNode->data = (u32int *) newNode + sizeof(node);
 	
+	// somewhere in the process of calculating the new size of the node there is a bug which manifests itself as a
+	// compounding error that makes newSize (64 * 3) * (the number of times the last block has been split by malloc - 1) bytes
+	// to large. This error is corrected by a sanity check of the size of the last node at the end of the function. I think this
+	// is related to the use of sizeof() in some manner, as noted elsewhere. The -1 above is caused because the size of the
+	// initial block when the system starts is always correct due to being initialized with parameter data.
 	u32int newSize = (u32int) myNode->size;
 	newSize = newSize - bytes;
 	newSize = newSize - sizeof(node);
 	
+	// another correction for some wonky thing going wrong with the algorithm in a consistent manner, and showing itself to work.
 	if (newSize >= 48)
 	{
 		newSize = newSize - 48;
@@ -230,15 +269,9 @@ node *split_free(node *myNode, u32int bytes)
 
 void compact_free(node *myNode)
 {
-	// i need to go over the list looking at each node's data address and size.
-	// if the node's data address + size = the next node then the free node in question, and the one following it, are adjacent.
-	// if two free nodes are adjacent then i need to compact them together.
+	// this node is responsible for compacting a node with the one after it.
+	// It's the programmer's responsibility to make sure myNode and myNode->next can be compacted.
 	
-	/*u32int newSize = (u32int) myNode->size;
-	newSize = newSize - bytes;
-	newSize = newSize - sizeof(node);
-	 */
-	 
 	 node *nextNode = myNode->next;
 	 
 	 u32int newSize = (u32int) myNode->size;
@@ -252,7 +285,9 @@ void compact_free(node *myNode)
 
 node *search_adjacent_free_node()
 {
-	// this function will for the first node that can be compacted with the node that imemdiately follows it.
+	// this function will search for the first node that can be compacted with
+	// the node that immediatly follows it, and return the address of the node
+	// that can be compacted.
 	
 	node *result = NULL;
 	
@@ -273,7 +308,7 @@ node *search_adjacent_free_node()
 	
 }
 
-void compact_all_free()
+void compact_all_adjacent_free()
 {
 	// this will repeatedly go over the list, compacting all adjacent free nodes
 	
@@ -285,11 +320,6 @@ void compact_all_free()
 		myNode = search_adjacent_free_node();
 	}
 	
-}
-
-void compact_free_mem()
-{
-	compact_all_free();
 }
 
 u32int *malloc(u32int bytes)
@@ -322,15 +352,15 @@ u32int *malloc(u32int bytes)
 		// the 48 is due to the pointer arithmetic that's needed to keep things straight on the list.
 		// i think the issue ultimately has to do with how sizeof() interprets the size of the node data type.
 			// most of the time it comes back as 16, but is blatantly wrong in some instances.
-			// (the node data type containts two u32int pointers, and two pointers to other nodes making it 128 bytes on the first node, and 64 on all others).
+			// (the node data type containts two u32int pointers, and two pointers to other nodes making it 256 bytes on the first node, and 64 on all others).
 			// i think this has to do with how a node was most recently initialized before the sizeof() function is called.
-			// to overcome this I need to use constant values at select places to adjust the values of47 pointers to bump them back to the right place.
+			// to overcome this I need to use constant values at select places to adjust the values of pointers to bump them back to the right place.
 			// the ultimate result is that if a node needs to be split to allocate some memory, and the resulting node is less than 48 bytes, then the size
-			// of the new node will not be calculated correctly, cause bad things to happen, result in memory leaks whenever new memory is allocated pr freed, and
+			// of the new node will not be calculated correctly, cause bad things to happen, result in memory leaks whenever new memory is allocated or freed, and
 			// ultimately corrupt the memory. You'll end up with nodes that either have no size information, or think the node address is also the size of the
 			// node (and making it appear that the node is much larger than it actually is).
-		// you can allocate memory as small as you want, but things get a little iffy for allocation requests of less than 128 bytes.
-		// things work for the most part, but some node occationally get a 0 size, and leak memory.
+		// you can allocate memory as small as you want, but things get a little iffy for allocation requests that result in a new node of less than 128 bytes.
+		// things work for the most part, but some node occationally get a 0 size, and leak memory (this might have been fixed already).
 		// if the node of free memory doesn't meet the minimum size requirements for the allocation then it's not a "fit," and going to the next
 		// node is still within the definition of "first fit."
 		else if ((u32int) candidate->size > (bytes + 48))
@@ -353,6 +383,14 @@ u32int *malloc(u32int bytes)
 
 void free(u32int *addr)
 {
+	// This frees allocated memory, and puts it back on the list of free memory available.
+	// When malloc is called, it returns the first address of the allocated memory.
+	// The node information always stays with a block of memory, and makes it easy to figure
+	// out how much memory was allocated, and how much is being freed, based on the first address
+	// of the block. Keeping the node with the allocated memory also makes it easy to put it
+	// back on the list.
+	
+	// create a pointer ot the node
 	node *myNode;
 	if ((u32int) addr == (first_mem_addr + 256))
 	{
@@ -363,12 +401,14 @@ void free(u32int *addr)
 		myNode = (node *) ((u32int) addr - 64);
 	}
 	
+	// find out where on the free memory list it's supposed to go.
 	node *candidate = free_mem->first;
 	
 	do
 	{
 		if ((u32int) candidate > (u32int) myNode)
 		{
+			// put it on the list in the proper place.
 			insertBefore(free_mem, candidate, myNode);
 			break;
 		}
@@ -379,6 +419,13 @@ void free(u32int *addr)
 
 void memory_manager_initialize(struct multiboot *mboot_ptr)
 {
+	// This function has to be called before you can do anything with the memory manager.
+	
+	// This gets the information about the system from the kernel, which was provided by GRUB,
+	// uses it to figure out the limits of memory, and memory available, sets up the doubly
+	// linked list that keeps track of the free memory available, and creates the initial node
+	// on the list from which all other memory is allocated.
+	
 	mem_upper_amount = mboot_ptr->mem_upper;			// this is the amount of high memory in kilobytes starting at the 1M mark.
 	first_mem_addr = kernel_end + 1;					// the first address after the kernel.
 	last_mem_addr = (mem_upper_amount * 1024) - 1;		// this should be the address of the last byte of high memory available.
@@ -403,20 +450,19 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	// the memory will be managed by putting the information needed for a node before the memory that will be allocated.
 	// i need to put a node at the first free address.
 	// the memory allocated will actually be the entire memory minus the size of the node data type.
-		// (it's 4 u32int * values, so it should be 32 bits * 4 = 128 bits, or 16 bytes)
 	/*
 	 *   ---------------------------------------------------------------
 	 *   |       |                                                     |
 	 *   ---------------------------------------------------------------
 	 *   A       B                                                     C
 	 */
-	// The space between A and B is the 16 bytes needed for a node
+	// The space between A and B is the 256 bytes needed for the first node
 	// The space between A and C is the allocated memory
 	// A is data - sizeof(node)
 	// B is data
 	// C is data + size
 	
-	// clear the list to make sure there are no funky pointers
+	// clear the list to make sure there are no funky garbage values.
 	free_mem->first = NULL;
 	free_mem->last = NULL;
 	
@@ -432,4 +478,17 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	// put it on the free memory list
 	insertBeginning(free_mem, node_ptr);
 	
+}
+
+void compact_free_mem()
+{
+	// This is a wrapper function that allows the programmer to compact
+	// the nodes on demand. This should probably be done automatically
+	// whenever memory is freed. I'm hesitant to do that considering
+	// the really bad time complexity that goes along with having a nested
+	// while/do while loop, which is what I have when the three functions
+	// of the free memory compaction system are considered as a whole.
+	// I get a linear search inside of a linear search on a list that's
+	// constantly changing in length.
+	compact_all_adjacent_free();
 }
