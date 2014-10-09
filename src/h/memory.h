@@ -37,6 +37,5 @@ u32int *malloc(u32int bytes);
 void free(u32int *addr);
 void print_mem_state();
 void print_node_state(u32int *myNodeAddr);
-void compact_free_mem();
 
 #endif

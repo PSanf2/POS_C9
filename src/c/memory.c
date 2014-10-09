@@ -217,7 +217,9 @@ node *split_free(node *myNode, u32int bytes)
 	// the math used in this if/else was arrived at through trial-and-error, and has been demonstrated to work in qemu.
 	// i don't have a clue what causes the need for the -17, but it works. the need for the 256/64 is caused by the first
 	// node on the list having a big header, but every other node needing only 64 bytes.
-	if (myNode == free_mem->first)
+	
+	//if (myNode == free_mem->first) // this shouldn't be checking if the node matches the first on the list, but the one residing at the first adress in memory
+	if ((u32int) myNode == first_mem_addr)
 	{
 		newNodeAddr = (((u32int) myNode) + sizeof(node) + bytes + 1 - 17) + 256;
 	}
@@ -415,6 +417,7 @@ void free(u32int *addr)
 		candidate = candidate->next;
 	} while (candidate != NULL);
 	
+	compact_all_adjacent_free();
 }
 
 void memory_manager_initialize(struct multiboot *mboot_ptr)

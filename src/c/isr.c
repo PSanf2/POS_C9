@@ -2,7 +2,7 @@
 
 void register_interrupt_handler(u8int n, isr handler)
 {
-		interrupt_handler[n] = handler;
+	interrupt_handler[n] = handler;
 }
 
 void isr_handler(registers regs)
