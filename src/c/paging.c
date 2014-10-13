@@ -1,4 +1,5 @@
 #include <paging.h>
+#include <memory.h>
 
 static void (*page_fault_handler)(u8int *buf, u16int size) = NULL;
 

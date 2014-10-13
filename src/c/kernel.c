@@ -29,7 +29,9 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	memory_manager_initialize(mboot_ptr);	// wtf does this cause a warning?
 	
 	// i need to set the page fault handler
+	page_fault_set_handler(kernel_page_fault_handler);
 	// i need to initialize paging
+	paging_initialize();
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
@@ -138,11 +140,6 @@ void terminal()
 				u32int nodeAddr = str_to_u32int(&terminal_buffer[token_size + 1]);
 				print_node_state((u32int *) nodeAddr);
 				
-				vga_buffer_put_str("\n");
-			}
-			else if (strcmp((string) token, "compactFree") == 0)
-			{
-				compact_free_mem();
 				vga_buffer_put_str("\n");
 			}
 			// else if () {}

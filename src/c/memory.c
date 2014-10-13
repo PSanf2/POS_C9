@@ -383,6 +383,24 @@ u32int *malloc(u32int bytes)
 	return (u32int *) result;
 }
 
+u32int *malloc_align(u32int bytes, u32int align)
+{
+	// this will allocate and free the proper crap on the list to make sure the
+	// address of the returned memory is aligned properly.
+	// we're wanting to return an address where [addy] % align == 0
+	// i should be able to find this by taking the next available memory address, and doing
+	// <some number> = [starting addr] / align
+	// [desired address] = (<some number> * align) + align
+	// [memory in the way] = [desired address] - [starting addr]
+	// i then need to allocate a temp block of [memory in the way] - sizeof(node)? [maybe just 64?],
+	// allocate a new block for the request
+	// free the temp block
+	// return the allocated block
+	
+	// this is going to be very similar to malloc()
+	return 0;
+}
+
 void free(u32int *addr)
 {
 	// This frees allocated memory, and puts it back on the list of free memory available.
