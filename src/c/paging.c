@@ -3,6 +3,21 @@
 
 static void (*page_fault_handler)(u8int *buf, u16int size) = NULL;
 
+void alloc_frame()
+{
+	
+}
+
+void free_frame()
+{
+	
+}
+
+void get_page()
+{
+	
+}
+
 void paging_initialize()
 {
 
