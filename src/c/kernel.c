@@ -1,4 +1,3 @@
-#include <multiboot.h>
 #include <system.h>
 
 #define MAX_TERMINAL_BUFFER_SIZE 4096

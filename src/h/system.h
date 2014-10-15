@@ -30,6 +30,7 @@ typedef void (*isr)(registers);
 #define enable_interrupts() asm volatile("sti")
 #define disable_interrupts() asm volatile("cli")
 
+#include <multiboot.h>
 #include <string.h>	// goes up top because it defines a datatype that can be used anywhere in the system.
 #include <gdt.h>
 #include <idt.h>

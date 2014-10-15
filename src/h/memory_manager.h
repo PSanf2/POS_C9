@@ -1,7 +1,6 @@
 #ifndef __MEMORY_MANAGER_H
 #define __MEMORY_MANAGER_H
 
-#include <multiboot.h>
 #include <system.h>
 
 typedef struct memory_map_struct
