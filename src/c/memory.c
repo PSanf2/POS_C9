@@ -1,5 +1,4 @@
 #include <memory.h>
-#include <vga.h>
  
 void memcpy(u8int *dest, const u8int *src, u32int len)
 {

@@ -37,6 +37,7 @@ typedef void (*isr)(registers);
 #include <irq.h>
 #include <keyboard.h>
 #include <memory.h>
+#include <memory_manager.h>
 #include <port.h>
 #include <timer.h>
 #include <vga.h>

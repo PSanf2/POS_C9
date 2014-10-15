@@ -5,12 +5,13 @@
 
 u32int initial_esp;
 
+
 static char terminal_buffer[MAX_TERMINAL_BUFFER_SIZE];
 static u16int terminal_buffer_length = 0;
 static u16int terminal_last_put = 0;
 static char terminal_seperator = '>';
 
-int kernel_main(struct multiboot __attribute__((unused)) *mboot_ptr, u32int initial_stack)
+int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
 	initial_esp = initial_stack;
 	
@@ -24,6 +25,22 @@ int kernel_main(struct multiboot __attribute__((unused)) *mboot_ptr, u32int init
 	keyboard_set_handler(kernel_keyboard_handler);
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
+	
+	// this is where i'll get paging set up.
+	
+	// the first thing i need to do is copy the memory map provided by grub.
+	// this is done because the information on the multiboot header comes in at an address below 1M, and i'm going to reclaim that space for a stack.
+	u8int mem_map[mboot_ptr->mmap_length]; // an array
+	memcpy((u8int *) &mem_map, (u8int *) mboot_ptr->mmap_addr, mboot_ptr->mmap_length);
+	
+	memory_map mem_map_descriptor;
+	mem_map_descriptor.addr = (u32int) &mem_map;
+	mem_map_descriptor.length = mboot_ptr->mmap_length;
+	
+	// i need to initialize paging
+	paging_initialize();
+	// i need to initialize my memory manager
+	memory_manager_initialize(mboot_ptr, mem_map_descriptor);
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();

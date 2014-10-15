@@ -3,12 +3,11 @@
 
 #include <system.h>
 
-/*
-typedef struct page_directory_struct
-{
-	
-};
-*/
+extern void update_segregs();
+extern u32int read_cr0();
+extern void write_cr0(u32int);
+extern u32int read_cr3();
+extern void write_cr3(u32int);
 
 extern void paging_initialize();
 extern void page_fault_set_handler(void (*callback)(u8int *buf, u16int size));
