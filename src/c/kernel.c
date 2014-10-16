@@ -38,6 +38,8 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	// i need to initialize paging
 	paging_initialize();
+	page_fault_set_handler(kernel_page_fault_handler);
+	
 	// i need to initialize my memory manager
 	memory_manager_initialize(mboot_ptr, mem_map_descriptor);
 	

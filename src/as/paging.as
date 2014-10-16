@@ -1,18 +1,4 @@
 .section .text
-	.global update_segregs
-	.type update_segregs, @function
-	update_segregs:
-		push %eax
-		mov $0x10, %ax
-		mov %ax, %ds 
-		mov %ax, %es
-		mov %ax, %fs
-		mov %ax, %gs
-		ljmp $0x08, $.segregs_complete_flush
-		.segregs_complete_flush:
-		pop %eax
-		ret
-
 	.global read_cr0
 	.type read_cr0, @function
 	read_cr0:

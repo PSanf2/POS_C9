@@ -25,6 +25,9 @@ void paging_initialize()
 		page_directory[i] = 0;
 	}
 	
+	// set the page fault interrupt handler.
+	register_interrupt_handler(IRQ14, &page_fault_interrupt_handler);
+	
 	// put the address of the page directory into the cr3 register
 	write_cr3((u32int) page_directory);
 	
@@ -32,7 +35,7 @@ void paging_initialize()
 	write_cr0((u32int) (read_cr0() | 0x80000000));
 	
 	// update the segment registers.
-	update_segregs();
+	//update_segregs(); // probably not needed
 }
 
 void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))

@@ -3,7 +3,6 @@
 
 #include <system.h>
 
-extern void update_segregs();
 extern u32int read_cr0();
 extern void write_cr0(u32int);
 extern u32int read_cr3();

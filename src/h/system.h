@@ -32,18 +32,17 @@ typedef void (*isr)(registers);
 
 #include <multiboot.h>
 #include <string.h>	// goes up top because it defines a datatype that can be used anywhere in the system.
+#include <port.h>
+#include <memory.h>
 #include <gdt.h>
 #include <idt.h>
 #include <isr.h>
 #include <irq.h>
-#include <keyboard.h>
-#include <memory.h>
-#include <memory_manager.h>
-#include <port.h>
 #include <timer.h>
-#include <vga.h>
 #include <keyboard.h>
+#include <vga.h>
 #include <paging.h>
+#include <memory_manager.h>
 
 void terminal();
 void kernel_keyboard_handler(u8int *buf, u16int size);
