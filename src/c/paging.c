@@ -34,8 +34,6 @@ void paging_initialize()
 	// set the paging bit on the cr0 register to enable paging
 	write_cr0((u32int) (read_cr0() | 0x80000000));
 	
-	// update the segment registers.
-	//update_segregs(); // probably not needed
 }
 
 void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))

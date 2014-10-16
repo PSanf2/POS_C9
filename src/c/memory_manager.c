@@ -165,7 +165,7 @@ u32int free_pages(u32int *start_at)
 	// is the page table not present?
 	if ((page_table & 1) == 0)
 	{
-		// i need to create a new page table, and create an entry int he page directory in for it
+		// i need to create a new page table, and create an entry in the page directory in for it
 		vga_buffer_put_str("\nPage table not present.");
 		vga_buffer_put_str("\nHalted while attempting to free a page.");
 		vga_buffer_put_str(" start_at = ");
@@ -231,6 +231,7 @@ void memory_manager_initialize(struct multiboot *mboot_ptr, memory_map mem_map)
 	vga_buffer_put_dec(mem_map.length);
 	
 	stack_ptr = (u32int *) 0x90000;
+	initial_stack_ptr = (u32int *) 0x90000; // do i need to do this? it wasn't getting initialized in the example code
 	
 	u32int i = mem_map.addr;
 	while (i < (mem_map.addr + mem_map.length))
