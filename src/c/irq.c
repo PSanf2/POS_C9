@@ -2,7 +2,7 @@
 
 void irq_handler(registers regs)
 {
-	if (regs.int_no >= 40)
+	if (regs.int_no >= 20)
 	{
 		outb(0xA0, 0x20);
 	}

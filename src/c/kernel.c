@@ -1,4 +1,3 @@
-#include <multiboot.h>
 #include <system.h>
 
 #define MAX_TERMINAL_BUFFER_SIZE 4096
@@ -25,13 +24,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
-	// i need to get the memory management going.
-	memory_manager_initialize(mboot_ptr);	// wtf does this cause a warning?
-	
-	// i need to set the page fault handler
-	page_fault_set_handler(kernel_page_fault_handler);
-	// i need to initialize paging
-	paging_initialize();
+	// paging stuff goes here
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
@@ -107,40 +100,6 @@ void terminal()
 			{
 				clear_screen();
 				vga_buffer_put_str("\r");
-			}
-			else if (strcmp((string) token, "memState") == 0)
-			{
-				print_mem_state();
-			}
-			else if (strcmp((string) token, "malloc") == 0)
-			{
-				// get the input token, and convert it to a u32int.
-				u32int bytes = str_to_u32int(&terminal_buffer[token_size + 1]);
-				
-				u32int *myMem = malloc(bytes);
-				
-				vga_buffer_put_str("\nAllocated memory starts at ");
-				vga_buffer_put_dec((u32int) myMem);
-				vga_buffer_put_str("\n");
-			}
-			else if (strcmp((string) token, "free") == 0)
-			{
-				
-				u32int myAddr = str_to_u32int(&terminal_buffer[token_size + 1]);
-				
-				//vga_buffer_put_str("\nKernel freeing memory from ");
-				//vga_buffer_put_dec(myAddr);
-				
-				free((u32int *) myAddr);
-				
-				vga_buffer_put_str("\n");
-			}
-			else if (strcmp((string) token, "node") == 0)
-			{
-				u32int nodeAddr = str_to_u32int(&terminal_buffer[token_size + 1]);
-				print_node_state((u32int *) nodeAddr);
-				
-				vga_buffer_put_str("\n");
 			}
 			// else if () {}
 			// else if () {}
