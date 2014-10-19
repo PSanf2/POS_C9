@@ -131,7 +131,7 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 			vga_buffer_put_hex((u32int) stack_ptr);
 			for (u32int j = *base_addr; j < (*base_addr + *length); j += 4096)
 			{
-				if (j < (u32int) stack_ptr)
+				if (j < (u32int) initial_stack_ptr)
 				{
 					continue;
 				}
