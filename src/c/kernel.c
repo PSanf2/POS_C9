@@ -25,6 +25,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
 	// paging stuff goes here
+	memory_manager_initialize(mboot_ptr);
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();

@@ -55,7 +55,7 @@ grub-iso: link
 	grub-mkrescue -o $(OUT_FILE_NAME).iso build/isodir
 
 qemu-run: grub-iso
-	qemu-system-i386 -cdrom $(OUT_FILE_NAME).iso -monitor stdio
+	qemu-system-i386 -cdrom $(OUT_FILE_NAME).iso -m 128M -monitor stdio
 	
 debug-run: grub-iso
 	qemu-system-i386 -S -s -cdrom $(OUT_FILE_NAME).iso -monitor stdio

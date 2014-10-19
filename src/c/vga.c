@@ -228,3 +228,56 @@ void vga_buffer_put_dec(u32int n)
     }
     vga_buffer_put_str(c2);
 }
+
+void vga_buffer_put_hex(u32int n)
+{
+	vga_buffer_put_str("0x");
+	if (n == 0)
+    {
+        vga_buffer_put_char('0');
+        return;
+    }
+    u32int acc = n;
+    u32int rem = 0;
+    s32int i = 0;
+    char hex[32];
+    while (acc > 0)
+    {
+		rem = acc % 16;
+		switch (rem)
+		{
+			case 10:
+				hex[i] = 'A';
+				break;
+			case 11:
+				hex[i] = 'B';
+				break;
+			case 12:
+				hex[i] = 'C';
+				break;
+			case 13:
+				hex[i] = 'D';
+				break;
+			case 14:
+				hex[i] = 'E';
+				break;
+			case 15:
+				hex[i] = 'F';
+				break;
+			default:
+				hex[i] = '0' + rem;
+				break;
+		}
+		i++;
+		acc /= 16;
+	}
+	hex[i] = 0;
+	char hex2[32];
+    hex2[i--] = 0;
+    int j = 0;
+    while(i >= 0)
+    {
+        hex2[i--] = hex[j++];
+    }
+    vga_buffer_put_str(hex2);
+}
