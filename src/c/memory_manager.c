@@ -22,7 +22,7 @@ void push_physical_address(u32int addr)
 		vga_buffer_put_str("\nHalting.");
 		for (;;) {}
 	}
-	stack_ptr -= 1;
+	stack_ptr--;
 	*stack_ptr = addr;
 }
 
@@ -37,7 +37,7 @@ u32int pop_physical_address()
 		for (;;) {}
 	}
 	u32int addr = *stack_ptr;
-	stack_ptr += 1;
+	stack_ptr++;
 	return addr;
 }
 
@@ -135,7 +135,6 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 		
 		vga_buffer_put_str(" type=");
 		vga_buffer_put_dec((u32int) *type);
-		
 		
 		if (*type == 1)
 		{
