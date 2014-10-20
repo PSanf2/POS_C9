@@ -11,6 +11,8 @@ typedef struct memory_map_struct
 
 extern void push_physical_address(u32int addr);
 extern u32int pop_physical_address();
+extern u32int mm_stack_full();
+extern u32int mm_stack_empty();
 extern void free_block(u32int addr);
 extern u32int allocate_block();
 extern void memory_manager_initialize(struct multiboot *mboot_ptr);

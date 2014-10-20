@@ -42,6 +42,16 @@ u32int pop_physical_address()
 	return addr;
 }
 
+u32int mm_stack_full()
+{
+	return (stack_ptr == stack_low);
+}
+
+u32int mm_stack_empty()
+{
+	return (stack_ptr == stack_high);
+}
+
 // wrapper functions to be used by outside calls.
 void free_block(u32int addr)
 {
@@ -104,6 +114,9 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	vga_buffer_put_str("\nThe stack will need to hold ");
 	vga_buffer_put_dec(stack_size);
 	vga_buffer_put_str(" entries to store every 4096th address.");
+	
+	// Assuming that I'll always have enough space right after my kernel may be bad.
+	// i might need to loop through the memory map and find an area that's explicitly large enough for the stack.
 	
 	stack_low = (u32int *) (kernel_end + 1);
 	vga_buffer_put_str("\nstack_low=");
