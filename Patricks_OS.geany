@@ -35,7 +35,7 @@ FILE_NAME_8=601;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attemp
 FILE_NAME_9=465;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fidt.c;0;4
 FILE_NAME_10=74;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Firq.c;0;4
 FILE_NAME_11=260;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fisr.c;0;4
-FILE_NAME_12=352;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkernel.c;0;4
+FILE_NAME_12=815;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkernel.c;0;4
 FILE_NAME_13=2360;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkeyboard.c;0;4
 FILE_NAME_14=855;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory.c;0;4
 FILE_NAME_15=20;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fpaging.c;0;4
@@ -57,7 +57,7 @@ FILE_NAME_30=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempt
 FILE_NAME_31=914;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fvga.h;0;4
 FILE_NAME_32=764;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmultiboot.h;0;4
 FILE_NAME_33=335;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmemory_manager.h;0;4
-FILE_NAME_34=905;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory_manager.c;0;4
+FILE_NAME_34=867;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory_manager.c;0;4
 FILE_NAME_35=230;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fpaging.as;0;4
 
 [VTE]

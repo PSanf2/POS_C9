@@ -22,6 +22,7 @@ void push_physical_address(u32int addr)
 		vga_buffer_put_str("\nHalting.");
 		for (;;) {}
 	}
+	
 	stack_ptr--;
 	*stack_ptr = addr;
 }
@@ -153,6 +154,13 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 					{
 						continue;
 					}
+					
+					// make sure the address is 4K aligned
+					if (j & 0xFFF)
+					{
+						j &= ~(0xFFF);
+					}
+					
 					push_physical_address(j);
 				}
 				vga_buffer_put_str("\nRegion addresses pushed to stack. stack_ptr=");
