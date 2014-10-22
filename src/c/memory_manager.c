@@ -142,44 +142,45 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 			
 			// i should get the finishing address of the region, maybe?
 			
+			u32int my_base_addr = *base_addr; // don't overwrite the *base addr or you'll have a bad time.
 			u32int end_addr = (*base_addr + *length) - 1;
 			vga_buffer_put_str(" Last address: ");
 			vga_buffer_put_hex(end_addr);
 			
 			// is the address inside the kernel?
 			vga_buffer_put_str("\nMaking sure base_addr doesn't point to memory used by the kernel.");
-			if (*base_addr >= kernel_start && *base_addr < kernel_end)
+			if (my_base_addr >= kernel_start && my_base_addr < kernel_end)
 			{
-				while ((*base_addr >= kernel_start && *base_addr < kernel_end))
+				while ((my_base_addr >= kernel_start && my_base_addr < kernel_end))
 				{
-					*base_addr = *base_addr + 1;
+					my_base_addr = my_base_addr + 1;
 				}
 			}
 			
 			// make sure the address is page aligned.
 			// don't know if i need this, but it may come in handy.
-			if (*base_addr & 0xFFF)
+			if (my_base_addr & 0xFFF)
 			{
-				*base_addr &= ~(0xFFF);
-				*base_addr = *base_addr + 0x1000;
+				my_base_addr &= ~(0xFFF);
+				my_base_addr = my_base_addr + 0x1000;
 			}
 			
-			vga_buffer_put_str("\nbase_addr is now ");
-			vga_buffer_put_hex(*base_addr);
+			vga_buffer_put_str("\nmy_base_addr is now ");
+			vga_buffer_put_hex(my_base_addr);
 			
 			// make sure there's enough space for the stack.
 			vga_buffer_put_str("\nSpace available: ");
-			vga_buffer_put_dec(end_addr - *base_addr);
+			vga_buffer_put_dec(end_addr - my_base_addr);
 			
 			vga_buffer_put_str(" Needed: ");
 			vga_buffer_put_dec((stack_size * sizeof(u32int)));
 			
-			if ((end_addr - *base_addr) > (stack_size * sizeof(u32int)))
+			if ((end_addr - my_base_addr) > (stack_size * sizeof(u32int)))
 			{
 				// there's enough space
 				vga_buffer_put_str("\nI have enough space.");
 				
-				stack_low = (u32int *) *base_addr;
+				stack_low = (u32int *) my_base_addr;
 				vga_buffer_put_str("\nstack_low=");
 				vga_buffer_put_hex((u32int) stack_low);
 				
