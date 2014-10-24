@@ -27,6 +27,11 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	// paging stuff goes here
 	memory_manager_initialize(mboot_ptr);
 	
+	// set the page fault handler
+	page_fault_set_handler(kernel_page_fault_handler);
+	// initialize paging
+	paging_initialize();
+	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");

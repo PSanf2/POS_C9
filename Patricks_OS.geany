@@ -22,10 +22,10 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=34
+current_page=29
 FILE_NAME_0=0;Conf;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fgrub.cfg;0;4
-FILE_NAME_1=181;None;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Flinker.ld;0;4
-FILE_NAME_2=1506;Make;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fmakefile;0;4
+FILE_NAME_1=258;None;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Flinker.ld;0;4
+FILE_NAME_2=1223;Make;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fmakefile;0;4
 FILE_NAME_3=467;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fboot.as;0;4
 FILE_NAME_4=171;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fgdt.as;0;4
 FILE_NAME_5=0;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fidt.as;0;4
@@ -56,8 +56,8 @@ FILE_NAME_29=222;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attem
 FILE_NAME_30=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Ftimer.h;0;4
 FILE_NAME_31=914;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fvga.h;0;4
 FILE_NAME_32=764;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmultiboot.h;0;4
-FILE_NAME_33=335;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmemory_manager.h;0;4
-FILE_NAME_34=867;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory_manager.c;0;4
+FILE_NAME_33=329;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmemory_manager.h;0;4
+FILE_NAME_34=1166;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory_manager.c;0;4
 FILE_NAME_35=230;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fpaging.as;0;4
 
 [VTE]

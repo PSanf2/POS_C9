@@ -69,14 +69,21 @@ void free_block(u32int addr)
 
 u32int allocate_block()
 {
-	return pop_physical_address();
+	if (!mm_stack_empty())
+	{
+		return pop_physical_address();
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 // get the ball rollin'
 void memory_manager_initialize(struct multiboot *mboot_ptr)
 {
 	// brag about every little thing.
-	vga_buffer_put_str("\nInitializing memory manager...");
+	//vga_buffer_put_str("\nInitializing memory manager...");
 	
 	// if i don't have a memory map
 	if (!(mboot_ptr->flags & 0x40))
@@ -94,21 +101,21 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	mmap.length = mboot_ptr->mmap_length;
 	
 	// figure out how much memory i have.
-	vga_buffer_put_str("\nAmount of memory: ");
+	//vga_buffer_put_str("\nAmount of memory: ");
 	// ya gotta twiddle the math for some reason. idunnolawl
 	u32int mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
-	vga_buffer_put_dec(mem_in_mb);
-	vga_buffer_put_str("MB");
+	//vga_buffer_put_dec(mem_in_mb);
+	//vga_buffer_put_str("MB");
 	
-	vga_buffer_put_str("\nKernel starts at ");
-	vga_buffer_put_hex(kernel_start);
-	vga_buffer_put_str(" Kernel ends at ");
-	vga_buffer_put_hex(kernel_end);
+	//vga_buffer_put_str("\nKernel starts at ");
+	//vga_buffer_put_hex(kernel_start);
+	//vga_buffer_put_str(" Kernel ends at ");
+	//vga_buffer_put_hex(kernel_end);
 	
-	vga_buffer_put_str("\nmmap_addr=");
-	vga_buffer_put_hex(mmap.addr);
-	vga_buffer_put_str(" mmap_length=");
-	vga_buffer_put_hex(mmap.length);
+	//vga_buffer_put_str("\nmmap_addr=");
+	//vga_buffer_put_hex(mmap.addr);
+	//vga_buffer_put_str(" mmap_length=");
+	//vga_buffer_put_hex(mmap.length);
 	
 	//vga_buffer_put_str("\n");
 	//vga_buffer_put_dec(mem_in_mb);
@@ -120,11 +127,11 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 	
 	// how many 4KB blocks of memory will i have?
 	u32int stack_size = mem_in_kb / 4;
-	vga_buffer_put_str("\nThe stack will need to hold ");
-	vga_buffer_put_dec(stack_size);
-	vga_buffer_put_str(" entries to store every 4096th address.");
+	//vga_buffer_put_str("\nThe stack will need to hold ");
+	//vga_buffer_put_dec(stack_size);
+	//ga_buffer_put_str(" entries to store every 4096th address.");
 	
-	vga_buffer_put_str("\nFinding space for the stack.");
+	//vga_buffer_put_str("\nFinding space for the stack.");
 	u32int i = mmap.addr;
 	while (i < (mmap.addr + mmap.length))
 	{
@@ -135,20 +142,20 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 		
 		if ((*type == 1) && (*base_addr >= 0x100000))
 		{
-			vga_buffer_put_str("\nRegion start: ");
-			vga_buffer_put_hex(*base_addr);
-			vga_buffer_put_str(" Length: ");
-			vga_buffer_put_hex(*length); // the length is the size of the region in kilobytes
+			//vga_buffer_put_str("\nRegion start: ");
+			//vga_buffer_put_hex(*base_addr);
+			//vga_buffer_put_str(" Length: ");
+			//vga_buffer_put_hex(*length); // the length is the size of the region in kilobytes
 			
 			// i should get the finishing address of the region, maybe?
 			
 			u32int my_base_addr = *base_addr; // don't overwrite the *base addr or you'll have a bad time.
 			u32int end_addr = (*base_addr + *length) - 1;
-			vga_buffer_put_str(" Last address: ");
-			vga_buffer_put_hex(end_addr);
+			//vga_buffer_put_str(" Last address: ");
+			//vga_buffer_put_hex(end_addr);
 			
 			// is the address inside the kernel?
-			vga_buffer_put_str("\nMaking sure base_addr doesn't point to memory used by the kernel.");
+			//vga_buffer_put_str("\nMaking sure base_addr doesn't point to memory used by the kernel.");
 			if (my_base_addr >= kernel_start && my_base_addr < kernel_end)
 			{
 				while ((my_base_addr >= kernel_start && my_base_addr < kernel_end))
@@ -165,32 +172,32 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 				my_base_addr = my_base_addr + 0x1000;
 			}
 			
-			vga_buffer_put_str("\nmy_base_addr is now ");
-			vga_buffer_put_hex(my_base_addr);
+			//vga_buffer_put_str("\nmy_base_addr is now ");
+			//vga_buffer_put_hex(my_base_addr);
 			
 			// make sure there's enough space for the stack.
-			vga_buffer_put_str("\nSpace available: ");
-			vga_buffer_put_dec(end_addr - my_base_addr);
+			//vga_buffer_put_str("\nSpace available: ");
+			//vga_buffer_put_dec(end_addr - my_base_addr);
 			
-			vga_buffer_put_str(" Needed: ");
-			vga_buffer_put_dec((stack_size * sizeof(u32int)));
+			//vga_buffer_put_str(" Needed: ");
+			//vga_buffer_put_dec((stack_size * sizeof(u32int)));
 			
 			if ((end_addr - my_base_addr) > (stack_size * sizeof(u32int)))
 			{
 				// there's enough space
-				vga_buffer_put_str("\nI have enough space.");
+				//vga_buffer_put_str("\nI have enough space.");
 				
 				stack_low = (u32int *) my_base_addr;
-				vga_buffer_put_str("\nstack_low=");
-				vga_buffer_put_hex((u32int) stack_low);
+				//vga_buffer_put_str("\nstack_low=");
+				//vga_buffer_put_hex((u32int) stack_low);
 				
 				stack_high = (u32int *) (stack_low + stack_size);
-				vga_buffer_put_str(" stack_high=");
-				vga_buffer_put_hex((u32int) stack_high);
+				//vga_buffer_put_str(" stack_high=");
+				//vga_buffer_put_hex((u32int) stack_high);
 				
 				stack_ptr = stack_high;
-				vga_buffer_put_str(" stack_ptr=");
-				vga_buffer_put_hex((u32int) stack_ptr);
+				//vga_buffer_put_str(" stack_ptr=");
+				//vga_buffer_put_hex((u32int) stack_ptr);
 				
 				// i'm done
 				break;
@@ -209,25 +216,25 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 		u32int *length = (u32int *) (i + 12);
 		u32int *type = (u32int *) (i + 20);
 		
-		vga_buffer_put_str("\nsize=");
-		vga_buffer_put_hex((u32int) *size);
+		//vga_buffer_put_str("\nsize=");
+		//vga_buffer_put_hex((u32int) *size);
 		
-		vga_buffer_put_str(" base_addr=");
-		vga_buffer_put_hex((u32int) *base_addr);
+		//vga_buffer_put_str(" base_addr=");
+		//vga_buffer_put_hex((u32int) *base_addr);
 		
-		vga_buffer_put_str(" length=");
-		vga_buffer_put_hex((u32int) *length);
+		//vga_buffer_put_str(" length=");
+		//vga_buffer_put_hex((u32int) *length);
 		
-		vga_buffer_put_str(" type=");
-		vga_buffer_put_dec((u32int) *type);
+		//vga_buffer_put_str(" type=");
+		//vga_buffer_put_dec((u32int) *type);
 		
 		if (*type == 1)
 		{
-			vga_buffer_put_str("\nRegion is free. stack_ptr=");
-			vga_buffer_put_hex((u32int) stack_ptr);
+			//vga_buffer_put_str("\nRegion is free. stack_ptr=");
+			//vga_buffer_put_hex((u32int) stack_ptr);
 			if (*base_addr >= 0x100000)
 			{
-				vga_buffer_put_str("\nRegion is in upper memory.");
+				//vga_buffer_put_str("\nRegion is in upper memory.");
 				u32int j = *base_addr;
 				// make sure the address is 4K aligned
 				if (j & 0xFFF)
@@ -248,18 +255,18 @@ void memory_manager_initialize(struct multiboot *mboot_ptr)
 					}
 					push_physical_address(j);
 				}
-				vga_buffer_put_str("\nRegion addresses pushed to stack. stack_ptr=");
-				vga_buffer_put_hex((u32int) stack_ptr);
+				//vga_buffer_put_str("\nRegion addresses pushed to stack. stack_ptr=");
+				//vga_buffer_put_hex((u32int) stack_ptr);
 			}
 			else
 			{
-				vga_buffer_put_str("\nRegion is in low memory. Addresses not pushed to stack. stack_ptr=");
-				vga_buffer_put_hex((u32int) stack_ptr);
+				//vga_buffer_put_str("\nRegion is in low memory. Addresses not pushed to stack. stack_ptr=");
+				//vga_buffer_put_hex((u32int) stack_ptr);
 			}
 		}
 		
 		i += *size + 4;
 	}
 	
-	vga_buffer_put_str("\n");
+	//vga_buffer_put_str("\n");
 }
