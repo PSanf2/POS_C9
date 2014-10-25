@@ -174,7 +174,7 @@ void kernel_vga_handler(u8int *buf, u16int size)
 
 void kernel_page_fault_handler(u8int *buf, u16int size)
 {
-	vga_buffer_put_str("\nKernel page fault handler called.");
+	put_str("\nKernel page fault handler called.");
 	for (int i = 0; i < size; i++)
 		put_char((char) buf[i]);
 	for (;;) {}
