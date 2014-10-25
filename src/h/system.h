@@ -41,8 +41,8 @@ typedef void (*isr)(registers);
 #include <timer.h>
 #include <keyboard.h>
 #include <vga.h>
-#include <paging.h>
 #include <memory_manager.h>
+#include <paging.h>
 
 void terminal();
 void kernel_keyboard_handler(u8int *buf, u16int size);

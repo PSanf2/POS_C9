@@ -18,6 +18,7 @@
 		isr\arg1:
 			cli
 			push $\arg1
+			jmp isr_common_stub
 	.endm
 	
 	# putting the macro to use to define the isr functions

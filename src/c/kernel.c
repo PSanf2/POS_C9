@@ -107,6 +107,14 @@ void terminal()
 				clear_screen();
 				vga_buffer_put_str("\r");
 			}
+			else if (strcmp((string) token, "fault") == 0)
+			{
+				u32int *ptr = (u32int *) 0xA0000000;
+				u32int do_fault = *ptr;
+				vga_buffer_put_str("\n");
+				vga_buffer_put_hex(do_fault); // causes the system to reboot. causing a page fault like it's supposed to, but i think it's causing a triple fault.
+				vga_buffer_put_str("\n");
+			}
 			// else if () {}
 			// else if () {}
 			else
@@ -166,6 +174,8 @@ void kernel_vga_handler(u8int *buf, u16int size)
 
 void kernel_page_fault_handler(u8int *buf, u16int size)
 {
-	kernel_vga_handler(buf, size);
+	vga_buffer_put_str("\nKernel page fault handler called.");
+	for (int i = 0; i < size; i++)
+		put_char((char) buf[i]);
 	for (;;) {}
 }

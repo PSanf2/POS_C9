@@ -51,6 +51,7 @@ void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 
 void page_fault_interrupt_handler(__attribute__ ((unused)) registers regs)
 {
+	vga_buffer_put_str("\nPage fault interrupt handler called.");
 	string msg = "Page Fault";
 	page_fault_handler((u8int *) msg, strlen(msg));
 }
