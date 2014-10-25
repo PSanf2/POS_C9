@@ -49,10 +49,10 @@ void keyboard_flush()
 
 void keyboard_initialize()
 {
-	register_interrupt_handler(IRQ1, &keyboard_interrupt_handler);
+	register_interrupt_handler(IRQ1, (isr) &keyboard_interrupt_handler);
 }
 
-void keyboard_interrupt_handler(__attribute__ ((unused)) registers regs)
+void keyboard_interrupt_handler(__attribute__ ((unused)) registers *regs)
 {
 	u8int scancode;
 	

@@ -34,7 +34,7 @@ void paging_initialize()
 	page_directory[0] = (u32int) page_table | 3;
 	
 	// i need to register the page fault interrupt handler
-	register_interrupt_handler(14, &page_fault_interrupt_handler);
+	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
 	
 	// i need to load the page directory address into cr3
 	write_cr3((u32int) page_directory);
@@ -49,9 +49,14 @@ void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 	page_fault_handler = callback;
 }
 
-void page_fault_interrupt_handler(__attribute__ ((unused)) registers regs)
+void page_fault_interrupt_handler(registers *regs)
 {
 	put_str("\nPage fault interrupt handler called.");
+	put_str("\nError code is ");
+	put_dec(regs->err_code); // this isn't working. why? i think something isn't being passed in properly.
+	
+	
+	
 	string msg = "\nPage Fault";
 	page_fault_handler((u8int *) msg, strlen(msg));
 }
