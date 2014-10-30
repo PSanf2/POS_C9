@@ -28,6 +28,7 @@ extern void put_char(char c);
 extern void scroll();
 extern void move_csr();
 extern void put_dec(u32int n);
+extern void put_hex(u32int n);
 extern void clear_screen();
 extern void vga_set_handler(void (*callback)(u8int *buf, u16int size));
 extern void vga_flush();
