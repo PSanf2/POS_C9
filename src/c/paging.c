@@ -101,17 +101,9 @@ void page_fault_interrupt_handler(registers regs)
 	put_str(" ss=");
 	put_hex(regs.ss);
 	
-	//u32int cr0_val = read_cr0(); // calling these causes the system to lock up
-	//u32int cr1_val = read_cr1();
 	u32int cr2_val = read_cr2();
 	u32int cr3_val = read_cr3();
 	u32int cr4_val = read_cr4();
-	
-	//put_str("\ncr0 val is ");
-	//put_dec(cr0_val);
-	
-	//put_str("\ncr1 val is ");
-	//put_dec(cr1_val);
 	
 	put_str("\ncr2 val is ");
 	put_hex(cr2_val);
@@ -122,6 +114,23 @@ void page_fault_interrupt_handler(registers regs)
 	put_str("\ncr4 val is ");
 	put_hex(cr4_val);
 	
+	u32int present = regs.err_code & 0x1;
+	u32int rw = regs.err_code & 0x2;
+	u32int us = regs.err_code & 0x4;
+	u32int reserved = regs.err_code & 0x8;
+	u32int id = regs.err_code & 0x10;
+	
+	put_str("\nError code evaluation:");
+	if (present) put_str(" P");
+	if (rw) put_str(" R/W");
+	if (us) put_str(" U/S");
+	if (reserved) put_str(" RSVD");
+	if (id) put_str(" I/D");
+	
+	// now what?
+	
+	
+	// do i really need to be calling a kernel level function?
 	string msg = "\nPage Fault";
 	page_fault_handler((u8int *) msg, strlen(msg));
 }
