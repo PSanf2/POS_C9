@@ -114,6 +114,7 @@ void terminal()
 				vga_buffer_put_str("\n");
 				vga_buffer_put_hex(do_fault); // causes the system to reboot. causing a page fault like it's supposed to, but i think it's causing a triple fault.
 				vga_buffer_put_str("\n");
+				vga_buffer_put_str("Done with read fault test."); // never called
 			}
 			else if (strcmp((string) token, "write_fault") == 0)
 			{
@@ -185,5 +186,5 @@ void kernel_page_fault_handler(u8int *buf, u16int size)
 	put_str("\nKernel page fault handler called.");
 	for (int i = 0; i < size; i++)
 		put_char((char) buf[i]);
-	for (;;) {}
+	//for (;;) {}
 }

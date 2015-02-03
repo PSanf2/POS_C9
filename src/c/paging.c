@@ -2,11 +2,13 @@
 
 static void (*page_fault_handler)(u8int *buf, u16int size) = NULL;
 
+u32int *page_directory;
+
 void paging_initialize()
 {
 	// i need to set up a pointer to my page directory.
 	// i can use the memory manager to allocate the first free page for the page directory address.
-	u32int *page_directory = (u32int *) allocate_block();
+	*page_directory = allocate_block();
 	
 	// i need to zero the entries on the page directory
 	for (int i = 0; i < 1024; i++)
@@ -44,6 +46,11 @@ void paging_initialize()
 	
 }
 
+void invlpg(u32int addr)
+{
+	asm volatile ("invlpg (%0)" : : "b" (addr) : "memory");
+}
+
 void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 {
 	page_fault_handler = callback;
@@ -51,6 +58,14 @@ void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 
 void page_fault_interrupt_handler(registers regs)
 {
+	
+	// close, but no cigar
+	// something's wrong with this where it'll go alright until the
+	// kernel level page fault handler is called
+	// once it's called the system will lock
+	// if it's not called, this function will enter an infinate loop
+	// not sure what's causing this behavior.
+	
 	put_str("\nPage fault interrupt handler called.");
 	
 	put_str("\nds=");
@@ -129,10 +144,118 @@ void page_fault_interrupt_handler(registers regs)
 	
 	// now what?
 	
+	if (!present) {
+		// this is where i need to do the fancy stuff
+		put_str("\nPage fault: Not present.");
+		
+		// does the page table that holds the page exist in the page directory?
+		u32int page_table_index = cr2_val >> 22; // get the last 10 bits
+		
+		put_str("\nIndex of the desired page table is ");
+		put_hex(page_table_index);
+		
+		// check if the page table for the desired page exists in the page directory
+		
+		put_str("\nValue on page directory at desired index is ");
+		put_hex(page_directory[page_table_index]);
+		
+		// does a page table for that page exist?
+		if (page_directory[page_table_index] == 0) { // this conditional is according to Yuri's code. not sure why this doesn't look at the first bit. doing so causes an infinate loop.
+			put_str("\nPage table at desired index is not present.");
+			
+			// no, so create it
+			u32int *page_table = (u32int *) allocate_block();
+			put_str("\nMemory for new page allocated at ");
+			put_hex((u32int) page_table);
+			
+			// clear the entries on the page table
+			for (u32int i = 0; i < 1024; i++) {
+				page_table[i] = 0; // if i'm getting an infinate looping when this function runs, this is probably causing it.
+			}
+			
+			put_str("\nPage table created.");
+			
+			// update the page directory to reflect that the table is present.
+			page_directory[page_table_index] = (u32int) page_table | 3;
+			
+			put_str("\nPage directory updated.");
+		}
+		
+		// here i should request a physical page
+		u32int page_to_map = allocate_block();
+		put_str("\nPage to map is ");
+		put_hex(page_to_map);
+		
+		// here i should map the page
+		
+		// i should get the physical address of the current page directory off the cr3 register
+		// it's already on the cr3_val variable
+		u32int *page_dir = (u32int *) cr3_val;
+		put_str("\nPage directory: ");
+		put_hex((u32int) page_dir);
+		
+		// i should calculate the index of the page table in the page directory
+		u32int page_dir_index = page_to_map >> 22;
+		put_str("\nPage directory index: ");
+		put_hex(page_dir_index);
+		
+		// i should calculate the index of the page in the page table
+		page_table_index = (page_to_map >> 12) & 0x3FF;
+		put_str("\nPage table index: ");
+		put_hex(page_table_index);
+		
+		// i should get the address of the page in the page table (last 20 bits)
+		u32int *table_addr = (u32int *) (page_dir[page_dir_index] & ~(0xFFF));
+		put_str("\nTable addr: ");
+		put_hex((u32int) table_addr);
+		
+		// i should get the attributes of the page
+		u32int page_attr = table_addr[page_table_index] & 0x03;
+		put_str("\nPage attribs: ");
+		put_hex(page_attr);
+		
+		// if there are no attributes then i should copy them from the page directory that the page table belongs to
+		if (page_attr == 0) {
+			u32int page_tbl_attr = page_dir[page_dir_index] & 0x03;
+			page_attr = page_tbl_attr;
+		}
+		put_str(" is now: ");
+		put_hex(page_attr);
+		
+		// i should update the page table's entry for the page
+		table_addr[page_table_index] = page_to_map | page_attr;
+		put_str("\nTable entry: ");
+		put_hex(table_addr[page_table_index]);
+		
+		// here i should update the TLB w/ invlpg.
+		invlpg(cr2_val);
+		
+	} else if (us) {
+		// print out a message to the screen, and halt the system
+		put_str("\nProtection fault. Memory at ");
+		put_hex(cr2_val);
+		put_str(" is reserved for supervisor.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	} else {
+		// something else happened, print out a message and halt the system
+		put_str("\nUnknown page fault exception has occured.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	}
+	
 	
 	// do i really need to be calling a kernel level function?
-	string msg = "\nPage Fault";
+	// might be handy in the future to keep the kernel aware of certain happenings.
+	string msg = "\nPage Fault Interrupt Handler Done";
 	page_fault_handler((u8int *) msg, strlen(msg));
+	
+	put_str("\nReturned from kernel level handler."); // works, then hangs
+	
 }
 
 
