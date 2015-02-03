@@ -8,7 +8,7 @@ void paging_initialize()
 {
 	// i need to set up a pointer to my page directory.
 	// i can use the memory manager to allocate the first free page for the page directory address.
-	*page_directory = allocate_block();
+	page_directory = (u32int *) allocate_block();
 	
 	// i need to zero the entries on the page directory
 	for (int i = 0; i < 1024; i++)
@@ -156,10 +156,14 @@ void page_fault_interrupt_handler(registers regs)
 		
 		// check if the page table for the desired page exists in the page directory
 		
-		put_str("\nValue on page directory at desired index is ");
-		put_hex(page_directory[page_table_index]);
+		//put_str("\nValue on page directory at desired index is ");
+		//put_hex(page_directory[page_table_index]);
 		
 		// does a page table for that page exist?
+		
+		
+		// something with this conditional statement is causing the inifinate loop.
+		// looks like trying to access the page directory array is causing a page fault
 		if (page_directory[page_table_index] == 0) { // this conditional is according to Yuri's code. not sure why this doesn't look at the first bit. doing so causes an infinate loop.
 			put_str("\nPage table at desired index is not present.");
 			
