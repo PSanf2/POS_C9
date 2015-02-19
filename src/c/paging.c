@@ -55,6 +55,9 @@ void page_fault_set_handler(void (*callback)(u8int *buf, u16int size))
 void page_fault_interrupt_handler(registers regs)
 {
 	put_str("\nPage Fault Interrupt Handler called.");
+	
+	// i need to figure out how to return from here.
+	// it should be an iretd return from an assembly function?
 }
 
 
