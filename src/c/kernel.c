@@ -26,6 +26,8 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	memory_manager_initialize(mboot_ptr);
 	
+	paging_initialize();
+	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
@@ -100,6 +102,24 @@ void terminal()
 			{
 				clear_screen();
 				vga_buffer_put_str("\r");
+			}
+			
+			else if (strcmp((string) token, "read_fault") == 0)
+			{
+				u32int *ptr = (u32int *) 0xA0000000;
+				u32int do_fault = *ptr;
+				vga_buffer_put_str("\n");
+				vga_buffer_put_hex(do_fault);
+				vga_buffer_put_str("\n");
+				vga_buffer_put_str("Done with read fault test."); // never called
+			}
+			else if (strcmp((string) token, "write_fault") == 0)
+			{
+				u32int *ptr = (u32int *) 0xA0000000;
+				*ptr = 0xDEADC0DE;
+				vga_buffer_put_str("\n");
+				vga_buffer_put_hex((u32int) ptr);
+				vga_buffer_put_str("\n");
 			}
 			
 			// else if () {}
