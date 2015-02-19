@@ -15,7 +15,6 @@ extern u32int read_cr4();
 extern void write_cr4(u32int);
 
 extern void paging_initialize();
-extern void invlpg(u32int addr);
 extern void page_fault_set_handler(void (*callback)(u8int *buf, u16int size));
 extern void page_fault_interrupt_handler(registers regs);
 

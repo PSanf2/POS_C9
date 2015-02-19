@@ -112,7 +112,7 @@ void terminal()
 				u32int *ptr = (u32int *) 0xA0000000;
 				u32int do_fault = *ptr;
 				vga_buffer_put_str("\n");
-				vga_buffer_put_hex(do_fault); // causes the system to reboot. causing a page fault like it's supposed to, but i think it's causing a triple fault.
+				vga_buffer_put_hex(do_fault);
 				vga_buffer_put_str("\n");
 				vga_buffer_put_str("Done with read fault test."); // never called
 			}
