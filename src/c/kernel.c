@@ -24,13 +24,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
-	// paging stuff goes here
 	memory_manager_initialize(mboot_ptr);
-	
-	// set the page fault handler
-	page_fault_set_handler(kernel_page_fault_handler);
-	// initialize paging
-	paging_initialize();
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	clear_screen();
@@ -107,23 +101,7 @@ void terminal()
 				clear_screen();
 				vga_buffer_put_str("\r");
 			}
-			else if (strcmp((string) token, "read_fault") == 0)
-			{
-				u32int *ptr = (u32int *) 0xA0000000;
-				u32int do_fault = *ptr;
-				vga_buffer_put_str("\n");
-				vga_buffer_put_hex(do_fault);
-				vga_buffer_put_str("\n");
-				vga_buffer_put_str("Done with read fault test."); // never called
-			}
-			else if (strcmp((string) token, "write_fault") == 0)
-			{
-				u32int *ptr = (u32int *) 0xA0000000;
-				*ptr = 0xDEADC0DE;
-				vga_buffer_put_str("\n");
-				vga_buffer_put_hex((u32int) ptr);
-				vga_buffer_put_str("\n");
-			}
+			
 			// else if () {}
 			// else if () {}
 			else
@@ -179,12 +157,4 @@ void kernel_vga_handler(u8int *buf, u16int size)
 {
 	for (int i = 0; i < size; i++)
 		put_char((char) buf[i]);
-}
-
-void kernel_page_fault_handler(u8int *buf, u16int size)
-{
-	put_str("\nKernel page fault handler called.");
-	for (int i = 0; i < size; i++)
-		put_char((char) buf[i]);
-	//for (;;) {}
 }
