@@ -10,7 +10,7 @@
 	write_cr0:
 		push %ebp
 		mov %esp, %ebp
-		mov 8(%ebp), %eax
+		mov 8(%esp), %eax
 		mov %eax, %cr0
 		
 		# is this line needed? dunno. getting it from the osdev wiki. yuri doesn't have it in his code.
@@ -36,7 +36,7 @@
 	write_cr3:
 		push %ebp
 		mov %esp, %ebp
-		mov 8(%ebp), %eax
+		mov 8(%esp), %eax
 		mov %eax, %cr3
 		
 		# is this line needed? dunno. getting it from the osdev wiki. yuri doesn't have it in his code.
