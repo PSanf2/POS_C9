@@ -46,7 +46,7 @@ link: $(GAS_OBJ_FILES) $(C_OBJ_FILES)
 
 ########################################################################
 
-# RULES TO RUN THE PROGRAM ONCE IT'S ASSEMBLED, AND COMPILED.
+# RULES TO RUN THE PROGRAM ONCE IT'S ASSEMBLED AND COMPILED.
 
 grub-iso: link
 	mkdir -p build/isodir
