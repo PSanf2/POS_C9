@@ -31,8 +31,7 @@ GAS_OBJ_FILES := $(addprefix build/, $(notdir $(GAS_FILES:.as=.as.o)))
 build/%.as.o: src/as/%.as
 	$(GAS) -o $@ $<
 
-assemble: 
-	$(GAS_OBJ_FILES)
+assemble: $(GAS_OBJ_FILES)
 
 C_FILES := $(wildcard src/c/*.c)
 C_OBJ_FILES := $(addprefix build/, $(notdir $(C_FILES:.c=.c.o)))
