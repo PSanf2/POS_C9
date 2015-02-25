@@ -41,7 +41,6 @@ typedef void (*isr)(registers);
 #include <timer.h>
 #include <keyboard.h>
 #include <vga.h>
-#include <physical_memory_manager.h>
 #include <paging.h>
 
 void terminal();

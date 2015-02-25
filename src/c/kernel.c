@@ -24,12 +24,14 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	vga_set_handler(kernel_vga_handler);
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
-	memory_manager_initialize(mboot_ptr);
-	
-	paging_initialize();
+	// this is where i should initialize paging
+	paging_initialize(mboot_ptr);
 	
 	set_text_color(LIGHT_GREY, BLUE);
-	clear_screen();
+	
+	// this line is commented out so i can see what's happening when i initialize paging. it should be uncommented when i know paging is working.
+	//clear_screen();
+	
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
 	vga_buffer_put_char(terminal_seperator);
 	
