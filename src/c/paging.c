@@ -112,6 +112,12 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// i need to clear out the 4KB of memory where the page directory address starts
 	memset((u8int *) page_directory, 0, 4096);
 	
+	// i need to create a blank page directory
+	for (int i = 0; i < 1024; i++)
+	{
+		page_directory[i] = 0 | 2;
+	}
+	
 	// i need to create tot_pages / 1024 page tables, and put them in the page directory.
 	// 1024 is the number of entries i can have on a page table
 	// with 128MB of memory i should have 32 page tables
