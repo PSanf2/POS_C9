@@ -115,8 +115,12 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	put_str("\nAddress of page_directory[0] is ");
 	put_hex((u32int) &page_directory[0]);
 	
+	
+	
 	put_str("\nAddress of page_directory[1023] is ");
 	put_hex((u32int) &page_directory[1023]);
+	
+	
 	
 	// i need to create a blank page directory
 	// this gives me 1024 entries on the page table that are 0x00000002
@@ -124,6 +128,12 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	{
 		page_directory[i] = 0 | 2;
 	}
+	
+	put_str("\nValue of page_directory[0] is ");
+	put_hex(page_directory[0]);
+	
+	put_str("\nValue of page_directory[1023] is ");
+	put_hex(page_directory[1023]);
 	
 	// i need to create my page tables.
 	/*
@@ -192,24 +202,24 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// while (or for?) loop here to create multiple page tables
 	for (int i = 0; i < 1024; i++)
 	{
-		page_table[i] = addr_counter;
+		page_table[i] = addr_counter | 3;
 		addr_counter = addr_counter + 0x1000;
 	}
 	
-	//put_str("\nValue of page_table[0] is ");
-	//put_hex(page_table[0]);
+	put_str("\nValue of page_table[0] is ");
+	put_hex(page_table[0]);
 	
-	//put_str("\nValue of page_table[1] is ");
-	//put_hex(page_table[1]);
+	put_str("\nValue of page_table[1] is ");
+	put_hex(page_table[1]);
 	
-	//put_str("\nValue of page_table[2] is ");
-	//put_hex(page_table[2]);
+	put_str("\nValue of page_table[2] is ");
+	put_hex(page_table[2]);
 	
-	//put_str("\nValue of page_table[1021] is ");
-	//put_hex(page_table[1021]);
+	put_str("\nValue of page_table[1021] is ");
+	put_hex(page_table[1021]);
 	
-	//put_str("\nValue of page_table[1022] is ");
-	//put_hex(page_table[1022]);
+	put_str("\nValue of page_table[1022] is ");
+	put_hex(page_table[1022]);
 	
 	put_str("\nAddress of page_table[1023] is ");
 	put_hex((u32int) &page_table[1023]);
@@ -219,7 +229,8 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	
 	// i should now put the page table address in page_directory[0]
-	page_directory[dir_counter] = (u32int) page_table;
+	// and set the attributes to indicate the page table is present.
+	page_directory[dir_counter] = (u32int) page_table | 3;
 	
 	put_str("\nValue of page_directory[0] is ");
 	put_hex(page_directory[0]);

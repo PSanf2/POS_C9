@@ -35,10 +35,10 @@ FILE_NAME_8=601;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attemp
 FILE_NAME_9=465;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fidt.c;0;4
 FILE_NAME_10=74;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Firq.c;0;4
 FILE_NAME_11=260;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fisr.c;0;4
-FILE_NAME_12=5466;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkernel.c;0;4
+FILE_NAME_12=5323;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkernel.c;0;4
 FILE_NAME_13=2360;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fkeyboard.c;0;4
 FILE_NAME_14=855;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fmemory.c;0;4
-FILE_NAME_15=1827;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fpaging.c;0;4
+FILE_NAME_15=7172;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fpaging.c;0;4
 FILE_NAME_16=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fport.c;0;4
 FILE_NAME_17=1168;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fstring.c;0;4
 FILE_NAME_18=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Ftimer.c;0;4
@@ -56,9 +56,7 @@ FILE_NAME_29=222;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attem
 FILE_NAME_30=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Ftimer.h;0;4
 FILE_NAME_31=914;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fvga.h;0;4
 FILE_NAME_32=764;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fmultiboot.h;0;4
-FILE_NAME_33=1111;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fpaging.as;0;4
-FILE_NAME_34=1333;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fphysical_memory_manager.c;0;4
-FILE_NAME_35=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fphysical_memory_manager.h;0;4
+FILE_NAME_33=782;ActionScript;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fas%2Fpaging.as;0;4
 
 [VTE]
 last_dir=/media/sf_Operating_System_Stuff/POS Attempts/POS_C9
