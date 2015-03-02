@@ -4,33 +4,14 @@
 extern u32int start;
 extern u32int end;
 
-static u32int kernel_start = (u32int) &start;
+static u32int kernel_start __attribute__((unused)) = (u32int) &start; // unused for the moment, but i think i'll need it later
 static u32int kernel_end = (u32int) &end;
-
-u32int *page_directory;
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-		// i'll want to pull in the mboot_ptr variable from the kernel main as a parameter
-		/*
-		1. Get a physical memory address where my page directory will reside (this is the first page aligned address of physical memory after the ? from above)
-		2. Set all of the memory for that 4KB section to 0 to make sure there's no garbage in there.
-		3. Get a physical memory address where my first page table will reside. (the second page aligned address of physical memory after the ?)
-		4. Set all of the memory for that 4KB section to 0.
-		5. Start treating the 4KB sections of memory as arrays.
-		6. For each item on the page directory array set the attributes to 0 | 2.
-		7. For the 0th item on the page directory set the attributes to the address of the page table | 3.
-		8. Identity map all of the physical memory from 0 on up to whatever's available into the page table (which will give me 4GB of virtual memory addresses, but only 128MB of them will actually be "real"). (How will I know which pages are present?)
-		9. Set the interrupt handler for my page fault handler.
-		10. Put the physical address of the page directory on the cr3 register.
-		11. Enable paging by doing | 0x80000000 on cr0.
-
-		From there I'll need to write the page fault handler, and functions to allocate, free, and map new pages as needed.
-		 */
+	put_str("\nInitializing paging.");
 	
-	put_str("\nInitializing paging... Good luck!"); // remove when done
-	
-	// make sure i got a memory map from the kernel
+	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
 	if (!(mboot_ptr->flags & 0x40))
 	{
@@ -40,214 +21,216 @@ void paging_initialize(struct multiboot *mboot_ptr)
 		for (;;) {}
 	}
 	
-	// information gathering
+	// gather information.
 	
-	// grab the values that define the memory map provided by GRUB, stick them into a struct w/ friendly names
-	memory_map mmap;
-	mmap.addr = mboot_ptr->mmap_addr;
-	mmap.length = mboot_ptr->mmap_length;
-	
-	put_str("\nHigh memory starts at ");
-	put_hex(mmap.addr);
-	
-	put_str("\nMemory map length is ");
-	put_hex(mmap.length);
-	
-	// figure out how much memory i have
+	// figure out how much memory i have in MB
 	u32int mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
 	
-	put_str("\nSystem has ");
-	put_dec(mem_in_mb);
-	put_str(" MB of memory.");
-	
+	// figure out how much that is in KB.
 	u32int mem_in_kb = mem_in_mb * 1024;
 	
-	put_str("\nSystem has ");
-	put_dec(mem_in_kb);
-	put_str(" KB of memory.");
-	
+	// figure out how much memory i have in bytes
 	u32int mem_in_bytes = mem_in_kb * 1024;
 	
-	put_str("\nSystem has ");
-	put_dec(mem_in_bytes);
-	put_str(" bytes of memory.");
+	// figure out what the last physical memory address should be.
+	u32int last_phys_mem_addr __attribute__((unused)) = mem_in_bytes - 1; // unused for the moment, but i think i'll need it later.
 	
-	u32int last_mem_addr = mem_in_bytes - 1;
-	
-	put_str("\nLast memory address should be ");
-	put_hex(last_mem_addr);
-	
+	// figure out how many page tables i'll need to create
 	u32int tot_pages = mem_in_kb / 4;
-	put_str("\nSystem has ");
-	put_dec(tot_pages);
-	put_str(" pages of memory to use.");
 	
-	u32int num_page_tables = tot_pages / 1024;
+	// figure out how many page tables i'll need
+	u32int tot_page_tables = tot_pages / 1024;
 	
-	put_str("\nI'll end up with ");
-	put_dec(num_page_tables);
-	put_str(" page tables in my page directory.");
+	// quick test to make sure i have the right numbers.
+	//put_str("\nTotal number of page tables I'll be creating is ");
+	//put_dec(tot_page_tables);
+	// worked
 	
-	put_str("\nKernel starts at ");
-	put_hex(kernel_start);
-	
-	put_str("\nKernel ends at ");
-	put_hex(kernel_end);
-	
-	// i should now have all the information i'll need to get started.
-	
-	// i need to figure out where i'll put my page directory.
-	// this should be the first page aligned address after the end of the kernel.
-	// assume the address where the kernel ends is not page aligned.
+	// figure out where i'll put my page directory.
+	// i'll be putting it at the first page aligned address after the kernel.
 	u32int page_dir_addr = kernel_end;
 	page_dir_addr &= ~(0xFFF);
 	page_dir_addr = page_dir_addr + 0x1000;
 	
-	put_str("\nI'll put the page directory at ");
-	put_hex(page_dir_addr);
-	
-	// make a pointer to the page directory
+	// create a pointer to the place in memory where the page directory will actually be.
+	u32int *page_directory;
 	page_directory = (u32int *) page_dir_addr;
 	
-	// i need to clear out the 4KB of memory where the page directory address starts
+	// clear out the 4KB where the page directory will live (just to make sure there's no garbage 'cause ya never know)
 	memset((u8int *) page_directory, 0, 4096);
 	
-	put_str("\nAddress of page_directory[0] is ");
-	put_hex((u32int) &page_directory[0]);
+	// do a quick test to make sure it actually worked properly.
+	//put_str("\nKernel ends at ");
+	//put_hex(kernel_end);
+	//put_str("\npage_directory[0] is at ");
+	//put_hex((u32int) &page_directory[0]);
+	// worked.
 	
-	
-	
-	put_str("\nAddress of page_directory[1023] is ");
-	put_hex((u32int) &page_directory[1023]);
-	
-	
-	
-	// i need to create a blank page directory
-	// this gives me 1024 entries on the page table that are 0x00000002
+	// create a blank page directory.
+	// this will give me 1024 entries on the array that have the value of 0 | 2
+	// this appears to be correct as per http://wiki.osdev.org/Setting_Up_Paging
+	// (if i'm only making 32 page tables then why am I marking all of the others? future mappings?)
 	for (int i = 0; i < 1024; i++)
 	{
-		page_directory[i] = 0 | 2;
+		page_directory[i] = 0 | 2; // supervisor, read/write, not present
 	}
 	
-	put_str("\nValue of page_directory[0] is ");
-	put_hex(page_directory[0]);
+	// figure out where i'm going to start putting my page tables.
+	// page tables will be put right after the page directory, and sequential
+	// since page tables are 4KB this will also serve as a counter.
+	u32int page_table_addr = (u32int) &page_directory[1023] + 0x4;
 	
-	put_str("\nValue of page_directory[1023] is ");
-	put_hex(page_directory[1023]);
+	// quick test to make sure everything's alright.
+	//put_str("\nAddress of page_directory[1023] is ");
+	//put_hex((u32int) &page_directory[1023]);
+	//put_str("\nPage tables will start at ");
+	//put_hex(page_table_addr);
+	// worked
 	
-	// i need to create my page tables.
+	// i'll also need a counter to keep track of the physical memory addresses
+	u32int phys_addr_counter = 0x0;
+	
+	// i need to loop tot_page_tables times to create all the page tables i'll need.
+	// for each page table...
+	for (u32int i = 0; i < tot_page_tables; i++)
+	{
+		// create a pointer to the place in memory where the page table will be
+		u32int *page_table;
+		page_table = (u32int *) page_table_addr;
+		
+		// do a quick test.
+		//put_str("\nPage table should be put at ");
+		//put_hex((u32int) page_table);
+		// worked
+		
+		// clear out the 4KB of memory that'll hold the page table (to make sure there's no garbage in there).
+		memset((u8int *) page_table, 0, 4096);
+		
+		// for each entry on the page table
+		for (int j = 0; j < 1024; j++)
+		{
+			// put the proper physical memory address on the array
+			page_table[j] = phys_addr_counter | 3; // supervisor, read/write, present
+			
+			// if the address is not inside the kernel then it shouldn't be supervisor only.
+			
+			// advance the counter
+			phys_addr_counter += 0x1000;
+		}
+		
+		// doing some tests.
+		/*
+		for (int k = 0; k < 17; k++)
+		{
+			put_str("\nValue of page_table[");
+			put_dec(k);
+			put_str("] is ");
+			put_hex((u32int) page_table[k]);
+		}
+		put_str("\nHalting.");
+		for (;;) {}
+		// works, confirms that the proper values are being put on the page tables.
+		*/
+		
+		// put the page table address in page_directory[i]
+		page_directory[i] = (u32int) page_table | 3; // read/write, present
+		
+		// if the page directory doesn't map to the kernel then it shouldn't be supervisor only.
+		
+		// increment the page table address counter.
+		page_table_addr += 0x1000;
+		
+	}
+	
+	// doing a couple of quick tests
+	
 	/*
-		
-		CR3 = page directory address, 109000 (or the calculated address for the page directory + 0x1000
-		
-		structure of page directory
-		 
-		page_directory[0] = address to first page table (10A000)
-		page_directory[1] = 10B000
-		page_directory[2] = 10C000
-		...
-		page_directory[31] = address for 32nd page table
-		page_directory[32] = 0 | 2
-		...
-		page_directory[1023] = 0 | 2
-		
-		structure for the page tables
-		
-		I'll have 32 page tables, each will be 4kb in size.
-		memory will look like (assuming 128MB of memory):
-		
-		0x0 - 0xFFFFF = low memory (1MB used)
-		
-		0x100000 - 0x108D54 = kernel
-		0x108D55 - 0x108FFF = space that's wasted to bump up to the next page aligned address (36KB used)
-		
-		0x109000 - 0x109FFF = page directory (4KB used)
-		
-		0x10A000 - 0x10AFFF = first page table
-		0x10B000 - 0x10BFFF = second page table
-		...
-		0x? - 0x?FFF = 1024th page table (4MB used)
-		
-		Page tables should start around the 40KB + 5MB mark, around 0x50A000
-		table_one[0] = 0x0
-		table_one[1] = 0x1000
-		table_one[2] = 0x2000
-		...
-		table_one[1023] = 0x900000? somewhere around there.
-		
-	 */
-	
-	// i need to create tot_pages / 1024 page tables, and put them in the page directory.
-	// 1024 is the number of entries i can have on a page table
-	// with 128MB of memory i should have 32 page tables
-	// this means i'll have 32 entries on my page directory when i'm done.
-	
-	
-	
-	
-	
-	
-	
-	// attempting to create the first page table
-	// this page table will cover the first 4KB of memory
-	// this will be from address 0x0 to 0x1000
-	
-	u32int *page_table = (u32int *) ((u32int) &page_directory[1023] + 0x4);
-	
-	put_str("\nThe address of the first page table is ");
-	put_hex((u32int) page_table);
-	
-	u32int addr_counter = 0x0;
-	u32int dir_counter = 0;
-	// while (or for?) loop here to create multiple page tables
-	for (int i = 0; i < 1024; i++)
-	{
-		page_table[i] = addr_counter | 3;
-		addr_counter = addr_counter + 0x1000;
-	}
-	
-	put_str("\nValue of page_table[0] is ");
-	put_hex(page_table[0]);
-	
-	put_str("\nValue of page_table[1] is ");
-	put_hex(page_table[1]);
-	
-	put_str("\nValue of page_table[2] is ");
-	put_hex(page_table[2]);
-	
-	put_str("\nValue of page_table[1021] is ");
-	put_hex(page_table[1021]);
-	
-	put_str("\nValue of page_table[1022] is ");
-	put_hex(page_table[1022]);
-	
-	put_str("\nAddress of page_table[1023] is ");
-	put_hex((u32int) &page_table[1023]);
-	
-	put_str("\nValue of page_table[1023] is ");
-	put_hex(page_table[1023]);
-	
-	
-	// i should now put the page table address in page_directory[0]
-	// and set the attributes to indicate the page table is present.
-	page_directory[dir_counter] = (u32int) page_table | 3;
-	
+	// see what address is on the page directory at a given index
 	put_str("\nValue of page_directory[0] is ");
 	put_hex(page_directory[0]);
+	// make a pointer to that value
+	u32int *table_ptr;
+	// adjust the value of the pointer (to make a pointer to the page table)
+	table_ptr = (u32int *) (page_directory[0] & ~(0xFFF));
+	// see what's in there.
+	for (int k = 0; k < 16; k++)
+	{
+		put_str("\nValue at table_ptr[");
+		put_dec(k);
+		put_str("] is ");
+		put_hex((u32int) table_ptr[k]);
+	}
+	put_str("\nLast memory address should be ");
+	put_hex(last_phys_mem_addr);
+	*/
+	// I *think* this is working. i'm getting the expected values coming back from the page tables.
+	// If I try to look at the contents of page_directory[32] (which should have nothing in it) then things get funny because
+	// doing 0 & ~(0xFFF) causes the address i'm trying to look to go funky.
 	
-	// end loop here
+	/*
+	for (int k = 0; k < 16; k++)
+	{
+		put_str("\nAddress of page_directory[");
+		put_dec(k);
+		put_str("] is ");
+		put_hex((u32int) &page_directory[k]);
+		put_str(". Value is ");
+		put_hex((u32int) page_directory[k]);
+	}
+	*/
+	// worked.
 	
+	/*
+	for (int k = 16; k < 33; k++)
+	{
+		put_str("\nAddress of page_directory[");
+		put_dec(k);
+		put_str("] is ");
+		put_hex((u32int) &page_directory[k]);
+		put_str(". Value is ");
+		put_hex((u32int) page_directory[k]);
+	}
+	*/
+	// worked
 	
+	/*
+	for (int k = 33; k < 49; k++)
+	{
+		put_str("\nAddress of page_directory[");
+		put_dec(k);
+		put_str("] is ");
+		put_hex((u32int) &page_directory[k]);
+		put_str(". Value is ");
+		put_hex((u32int) page_directory[k]);
+	}
+	*/
+	// worked
 	
+	// i need to set the interrupt handler
+	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
 	
+	// i need to put the address of the page directory on CR3
+	write_cr3(page_dir_addr);
 	
+	// i need to set the paging enable bit on CR0
+	write_cr0((u32int) (read_cr0() | 0x80000000));
 	
-	
-	
-	put_str("\nDone initializing paging. Hope it worked!\n"); // remove when done
+	put_str("\nDone initializing paging.\n");
 }
 
 void page_fault_interrupt_handler(__attribute__ ((unused)) registers regs)
 {
 	
 }
+
+
+
+
+
+
+
+
+
+
+
+
