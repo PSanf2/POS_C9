@@ -31,6 +31,16 @@ static u32int *page_stack_high;
 static u32int *page_directory;
 static u32int *page_table;
 
+void print_paging_info()
+{
+	put_str("\nPage directory physical address is ");
+	put_hex(page_dir_phys_addr);
+	
+	put_str("\nPage table physical address is ");
+	put_hex(page_table_phys_addr);
+	
+}
+
 void print_stack_info()
 {
 	put_str("\nStack low address is ");
@@ -126,7 +136,7 @@ void paging_stack_initialize()
 		paging_stack_push(i);
 	}
 	
-	print_stack_info();
+	//print_stack_info();
 	
 	// doing a test to make sure it worked.
 	/*
@@ -194,7 +204,7 @@ u32int paging_stack_empty()
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-	put_str("\nInitializing paging...");
+	//put_str("\nInitializing paging...");
 	
 	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
@@ -232,13 +242,71 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	last_page_phys_addr = last_phys_mem_addr;
 	last_page_phys_addr &= ~(0xFFF);
 	
-	print_system_info();
+	//print_system_info();
 	
 	paging_stack_initialize();
 	
+	// i'm going to identity map the grub space, kernel, paging stack, one page directory, and one page table.
+	// i'm not going to be mapping the entire 4MB that the page table can support. Just up to what's needed to map everthing i already have in memory.
 	
+	// figure out where i'll put my page directory
+	page_dir_phys_addr = paging_stack_pop();
 	
-	put_str("\nDone initializing paging.\n");
+	// create a pointer to the page directory
+	page_directory = (u32int *) page_dir_phys_addr;
+	
+	// clear out the 4KB where it will live.
+	memset((u8int *) page_directory, 0, 4096);
+	
+	// create a blank page directory.
+	for (int i = 0; i < 1024; i++)
+	{
+		page_directory[i] = 0 | 2; // supervisor, read/write, not present
+	}
+	
+	// figure out where my page table will be.
+	page_table_phys_addr = paging_stack_pop();
+	
+	// create a pointer to the page table
+	page_table = (u32int *) page_table_phys_addr;
+	
+	// clear out the space for the page table
+	memset((u8int *) page_table, 0, 4096);
+	
+	// in order to keep this simple i'm going to use a physical address counter
+	// this can be done with one less variable by using a hex and multiplication.
+	// i want to fill in each entry of the page table, but i only want to map the pages up to the page table
+	u32int phys_addr_counter = 0x0;
+	for (int i = 0; i < 1024; i++)
+	{
+		// if the address i'm wanting to put on the page table is less than or equal the address of the page table
+		// (if i mapped the first 4MB of memory then i'd be shooting myself in the foot because of the values on the stack)
+		if (phys_addr_counter <= page_table_phys_addr)
+		{
+			page_table[i] = phys_addr_counter | 3; // supervisor, read/write, present.
+		}
+		else
+		{
+			break;
+		}
+		phys_addr_counter += 0x1000;
+	}
+	
+	// put the page table on to the page directory.
+	page_directory[0] = (u32int) page_table | 3; // supervisor, read/write, present
+	
+	// register my interrupt handler
+	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
+	
+	// put the address of the page directory on CR3
+	write_cr3((u32int) page_directory);
+	
+	// enable paging.
+	write_cr0((u32int) (read_cr0() | 0x80000000));
+	
+	//print_paging_info();
+	
+	//put_str("\nDone initializing paging.\n");
 }
 
 void page_fault_interrupt_handler(registers regs)

@@ -27,6 +27,7 @@ extern void write_cr3(u32int);
 // functions i'll need in c
 
 // a function to print out various pieces of information as I go.
+void print_paging_info();
 void print_stack_info();
 void print_system_info();
 
