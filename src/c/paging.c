@@ -96,7 +96,7 @@ void print_system_info()
 void paging_stack_initialize()
 {
 	// for the sake of sanity i'll be making some assumptions that'll cause the size of the stack to be larger than what's needed.
-	// instead of figuring out how large the stack will actually need to be i'll determine its size based on hypothetical maximums
+	// instead of figuring out the minimum size the stack will actually need to be i'll determine its size based on hypothetical maximums
 		// that would be used if i was putting EVERY page aligned address from 0x0 to last_page_phys_addr on the stack.
 	// this will make the stack larger than it actually needs to be, but will result in more sane programming.
 	
@@ -228,7 +228,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	mem_in_bytes = mem_in_kb * 1024;
 	
 	// figure out what the last physical memory address should be.
-	last_phys_mem_addr = mem_in_bytes - 1; // unused for the moment, but i think i'll need it later.
+	last_phys_mem_addr = mem_in_bytes - 1;
 	
 	// figure out how many total pages of physical memory i have
 	tot_phys_pages = mem_in_kb / 4;
@@ -244,6 +244,9 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	//print_system_info();
 	
+	// get the stack of free pages set up.
+	// this stack will start returning physical memory address that are located after the grub space, kernel, and stack space.
+	// i'll be able to use the stack to get free page addresses.
 	paging_stack_initialize();
 	
 	// i'm going to identity map the grub space, kernel, paging stack, one page directory, and one page table.
@@ -275,19 +278,19 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	// in order to keep this simple i'm going to use a physical address counter
 	// this can be done with one less variable by using a hex and multiplication.
-	// i want to fill in each entry of the page table, but i only want to map the pages up to the page table
+	// i only want to fill in entries on the page table for the pages that are actually in memory that need to be mapped.
 	u32int phys_addr_counter = 0x0;
 	for (int i = 0; i < 1024; i++)
 	{
-		// if the address i'm wanting to put on the page table is less than or equal the address of the page table
-		// (if i mapped the first 4MB of memory then i'd be shooting myself in the foot because of the values on the stack)
+		// if the address i'm wanting to put on the page table is less than or equal the address of the page table...
+		// (if i mapped the first 4MB of memory then i'd be shooting myself in the foot because of the initial values on the stack)
 		if (phys_addr_counter <= page_table_phys_addr)
 		{
 			page_table[i] = phys_addr_counter | 3; // supervisor, read/write, present.
 		}
-		else
+		else // i'm done.
 		{
-			break;
+			break; // i could just pop more values off the stack to map the first 4MB at this point.
 		}
 		phys_addr_counter += 0x1000;
 	}
