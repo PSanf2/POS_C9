@@ -26,6 +26,19 @@ extern void write_cr3(u32int);
 
 // functions i'll need in c
 
+// a function to print out various pieces of information as I go.
+void print_stack_info();
+void print_system_info();
+
+// paging stack initilzation function.
+void paging_stack_initialize();
+
+// functions i need to push and pop from the paging stack.
+void paging_stack_push(u32int phys_addr);
+u32int paging_stack_pop();
+u32int paging_stack_full();
+u32int paging_stack_empty();
+
 // paging initialization function
 void paging_initialize(struct multiboot *mboot_ptr);
 

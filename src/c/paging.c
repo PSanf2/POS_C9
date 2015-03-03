@@ -4,11 +4,197 @@
 extern u32int start;
 extern u32int end;
 
-static u32int kernel_start __attribute__((unused)) = (u32int) &start; // unused for the moment, but i think i'll need it later
+static u32int kernel_start = (u32int) &start;
 static u32int kernel_end = (u32int) &end;
+
+// static (visable only inside this file) variables i want to use to keep track of things as I go along.
+static u32int mem_in_mb;
+static u32int mem_in_kb;
+static u32int mem_in_bytes;
+static u32int last_phys_mem_addr;
+static u32int tot_phys_pages;
+static u32int first_page_after_kernel_phys_addr;
+static u32int last_page_phys_addr;
+static u32int stack_low_phys_addr;
+static u32int stack_high_phys_addr;
+static u32int stack_size_in_bytes;
+static u32int first_page_after_stack;
+static u32int page_dir_phys_addr;
+static u32int page_table_phys_addr;
+
+// static pointers i'll need to manage my stack of free pages
+static u32int *page_stack_low;
+static u32int *page_stack_ptr;
+static u32int *page_stack_high;
+
+// static pointers i'll need to enable paging
+static u32int *page_directory;
+static u32int *page_table;
+
+void print_stack_info()
+{
+	put_str("\nStack low address is ");
+	put_hex(stack_low_phys_addr);
+	
+	put_str("\nStack size in bytes is ");
+	put_dec(stack_size_in_bytes);
+	
+	put_str("\nStack high address is ");
+	put_hex(stack_high_phys_addr);
+	
+	put_str("\nLast address on the stack should be ");
+	put_hex(first_page_after_stack);
+	
+}
+
+void print_system_info()
+{
+	// this function is used to print out information
+	put_str("\nSystem has ");
+	put_dec(mem_in_mb);
+	put_str(" MB of memory.");
+	
+	put_str("\nSystem has ");
+	put_dec(mem_in_kb);
+	put_str(" KB of memory.");
+	
+	put_str("\nSystem has ");
+	put_dec(mem_in_bytes);
+	put_str(" bytes of memory.");
+	
+	put_str("\nKernel starts at ");
+	put_hex(kernel_start);
+	
+	put_str("\nKernel ends at ");
+	put_hex(kernel_end);
+	
+	put_str("\nLast physical memory address is ");
+	put_hex(last_phys_mem_addr);
+	
+	put_str("\nSystem has ");
+	put_dec(tot_phys_pages);
+	put_str(" pages of physical memory.");
+	
+	put_str("\nFirst page aligned physical address after kernel is ");
+	put_hex(first_page_after_kernel_phys_addr);
+	
+	put_str("\nLast page aligned physical address is ");
+	put_hex(last_page_phys_addr);
+	
+}
+
+void paging_stack_initialize()
+{
+	// for the sake of sanity i'll be making some assumptions that'll cause the size of the stack to be larger than what's needed.
+	// instead of figuring out how large the stack will actually need to be i'll determine its size based on hypothetical maximums
+		// that would be used if i was putting EVERY page aligned address from 0x0 to last_page_phys_addr on the stack.
+	// this will make the stack larger than it actually needs to be, but will result in more sane programming.
+	
+	// this will have to be run before i enable paging.
+	// when i initialize paging i'll include the stack in the identity mapping, and that's what will keep this working.
+	
+	// the stack will be put right after the kernel, so the low address will be the first page aligned address after the kernel
+	stack_low_phys_addr = first_page_after_kernel_phys_addr;
+	
+	// the hypothetical maximum size of the stack is the total number of pages available to the system.
+	// i'll need 4 bytes for each item on the stack
+	stack_size_in_bytes = tot_phys_pages * 4;	
+	
+	// the high address will be where the stack begins.
+	stack_high_phys_addr = stack_low_phys_addr + stack_size_in_bytes;
+	
+	// since i know i'll be using more space than the stack actually needs i'll bump the stack high address down four bytes
+	// if i left it as is then the first item on the stack would actually be in another page
+	// doing this saves me 4kb of space (a page)
+	stack_high_phys_addr -= 0x4;
+	
+	// i need to put the addresses on the stack in reverse order from last_page_phys_addr to the first page aligned address on the stack.
+	// i need to figure out what the first page aligned address after the stack is, and put that on the stack last.
+	first_page_after_stack = stack_high_phys_addr;
+	first_page_after_stack &= ~(0xFFF);
+	first_page_after_stack += 0x1000;
+	
+	// create the pointers needed for the stack.
+	page_stack_low = (u32int *) stack_low_phys_addr;
+	page_stack_high = (u32int *) stack_high_phys_addr;
+	page_stack_ptr = (u32int *) stack_high_phys_addr;
+	
+	// i need to populate the stack.
+	// remember to put the last page address on the stack first, and work backwards.
+	for (u32int i = last_page_phys_addr; i >= first_page_after_stack; i -= 0x1000)
+	{
+		paging_stack_push(i);
+	}
+	
+	print_stack_info();
+	
+	// doing a test to make sure it worked.
+	/*
+	for (u32int i = 0; i < 16; i++)
+	{
+		put_str("\n");
+		put_hex((u32int) page_stack_ptr);
+		put_str(" => ");
+		put_hex(paging_stack_pop());
+	}
+	// worked
+	*/
+	
+	/*
+	do
+	{
+		put_str("\n");
+		put_hex((u32int) page_stack_ptr);
+		put_str(" => ");
+		put_hex(paging_stack_pop());
+	} while (1);
+	// worked
+	*/
+}
+
+void paging_stack_push(u32int phys_addr)
+{
+	// if the stack is full
+	if (paging_stack_full())
+	{
+		// whine about it, and refuse to play any more
+		put_str("\nPaging stack is full.");
+		put_str("\nHalting.");
+		for (;;) {}
+	}
+	
+	page_stack_ptr--;
+	*page_stack_ptr = phys_addr;
+}
+
+u32int paging_stack_pop()
+{
+	// if the stack is empty
+	if (paging_stack_empty())
+	{
+		put_str("\nPaging stack is empty.");
+		put_str("\nHalting.");
+		for (;;) {}
+	}
+	
+	u32int phys_addr = *page_stack_ptr;
+	page_stack_ptr++;
+	return phys_addr;
+}
+
+u32int paging_stack_full()
+{
+	return (page_stack_ptr == page_stack_low);
+}
+
+u32int paging_stack_empty()
+{
+	return (page_stack_ptr == page_stack_high);
+}
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
+	put_str("\nInitializing paging...");
 	
 	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
@@ -23,93 +209,36 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// gather information.
 	
 	// figure out how much memory i have in MB
-	u32int mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
+	mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
 	
 	// figure out how much that is in KB.
-	u32int mem_in_kb = mem_in_mb * 1024;
+	mem_in_kb = mem_in_mb * 1024;
 	
 	// figure out how much memory i have in bytes
-	u32int mem_in_bytes = mem_in_kb * 1024;
+	mem_in_bytes = mem_in_kb * 1024;
 	
 	// figure out what the last physical memory address should be.
-	u32int last_phys_mem_addr __attribute__((unused)) = mem_in_bytes - 1; // unused for the moment, but i think i'll need it later.
+	last_phys_mem_addr = mem_in_bytes - 1; // unused for the moment, but i think i'll need it later.
 	
-	// figure out how many page tables i'll need to create
-	u32int tot_pages = mem_in_kb / 4;
+	// figure out how many total pages of physical memory i have
+	tot_phys_pages = mem_in_kb / 4;
 	
-	// figure out how many page tables i'll need
-	u32int tot_page_tables = tot_pages / 1024;
+	// figure out where my first free page aligned address is (where my free memory starts after the kernel)
+	first_page_after_kernel_phys_addr = kernel_end;
+	first_page_after_kernel_phys_addr &= ~(0xFFF);
+	first_page_after_kernel_phys_addr += 0x1000;
 	
-	// figure out where i'll put my page directory.
-	// i'll be putting it at the first page aligned address after the kernel.
-	u32int page_dir_addr = kernel_end;
-	page_dir_addr &= ~(0xFFF);
-	page_dir_addr = page_dir_addr + 0x1000;
+	// figure out the physical address for my last page.
+	last_page_phys_addr = last_phys_mem_addr;
+	last_page_phys_addr &= ~(0xFFF);
 	
-	// create a pointer to the place in memory where the page directory will actually be.
-	u32int *page_directory;
-	page_directory = (u32int *) page_dir_addr;
+	print_system_info();
 	
-	// clear out the 4KB where the page directory will live (just to make sure there's no garbage 'cause ya never know)
-	memset((u8int *) page_directory, 0, 4096);
+	paging_stack_initialize();
 	
-	// create a blank page directory.
-	// this will give me 1024 entries on the array that have the value of 0 | 2
-	// this appears to be correct as per http://wiki.osdev.org/Setting_Up_Paging
-	// (if i'm only making 32 page tables then why am I marking all of the others? future mappings?)
-	for (int i = 0; i < 1024; i++)
-	{
-		page_directory[i] = 0 | 2; // supervisor, read/write, not present
-	}
 	
-	// figure out where i'm going to start putting my page tables.
-	// page tables will be put right after the page directory, and sequential
-	// since page tables are 4KB this will also serve as a counter.
-	u32int page_table_addr = (u32int) &page_directory[1023] + 0x4;
 	
-	// i'll also need a counter to keep track of the physical memory addresses
-	u32int phys_addr_counter = 0x0;
-	
-	// i need to loop tot_page_tables times to create all the page tables i'll need.
-	// for each page table...
-	for (u32int i = 0; i < tot_page_tables; i++)
-	{
-		// create a pointer to the place in memory where the page table will be
-		u32int *page_table;
-		page_table = (u32int *) page_table_addr;
-		
-		// clear out the 4KB of memory that'll hold the page table (to make sure there's no garbage in there).
-		memset((u8int *) page_table, 0, 4096);
-		
-		// for each entry on the page table
-		for (int j = 0; j < 1024; j++)
-		{
-			// put the proper physical memory address on the array
-			page_table[j] = phys_addr_counter | 3; // supervisor, read/write, present
-			
-			// if the address is not inside the kernel, the page directory, or a page table, then it shouldn't be supervisor only. I'll change this later.
-			
-			// advance the counter
-			phys_addr_counter += 0x1000;
-		}
-		
-		// put the page table address in page_directory[i]
-		page_directory[i] = (u32int) page_table | 3; // supervisor, read/write, present (as these correct for page directories that don't map to the kernel?)
-		
-		// increment the page table address counter.
-		page_table_addr += 0x1000;
-		
-	}
-	
-	// i need to set the interrupt handler
-	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
-	
-	// i need to put the address of the page directory on CR3
-	write_cr3(page_dir_addr);
-	
-	// i need to set the paging enable bit on CR0
-	write_cr0((u32int) (read_cr0() | 0x80000000));
-	
+	put_str("\nDone initializing paging.\n");
 }
 
 void page_fault_interrupt_handler(registers regs)

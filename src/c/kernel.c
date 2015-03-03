@@ -29,7 +29,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	
-	clear_screen();
+	//clear_screen();
 	
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
 	vga_buffer_put_char(terminal_seperator);
