@@ -136,7 +136,7 @@ void paging_stack_initialize()
 		paging_stack_push(i);
 	}
 	
-	//print_stack_info();
+	print_stack_info();
 	
 	// doing a test to make sure it worked.
 	/*
@@ -204,7 +204,7 @@ u32int paging_stack_empty()
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-	//put_str("\nInitializing paging...");
+	put_str("\nInitializing paging...");
 	
 	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
@@ -242,7 +242,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	last_page_phys_addr = last_phys_mem_addr;
 	last_page_phys_addr &= ~(0xFFF);
 	
-	//print_system_info();
+	print_system_info();
 	
 	// get the stack of free pages set up.
 	// this stack will start returning physical memory address that are located after the grub space, kernel, and stack space.
@@ -307,9 +307,9 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// enable paging.
 	write_cr0((u32int) (read_cr0() | 0x80000000));
 	
-	//print_paging_info();
+	print_paging_info();
 	
-	//put_str("\nDone initializing paging.\n");
+	put_str("\nDone initializing paging.\n");
 }
 
 void page_fault_interrupt_handler(registers regs)
