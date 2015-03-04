@@ -24,14 +24,6 @@ extern u32int read_cr2();
 extern u32int read_cr3();
 extern void write_cr3(u32int);
 
-// functions i'll need in c
-
-// a function to print out various pieces of information as I go.
-void print_paging_info();
-void print_stack_info();
-void print_system_info();
-void print_page_fault_info(registers regs);
-
 // paging stack initilzation function.
 void paging_stack_initialize();
 

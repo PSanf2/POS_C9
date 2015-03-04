@@ -29,7 +29,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	
-	//clear_screen();
+	clear_screen();
 	
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
 	vga_buffer_put_char(terminal_seperator);
@@ -119,7 +119,7 @@ void terminal()
 				u32int *ptr = (u32int *) 0xA0000000;
 				*ptr = 0xDEADC0DE;
 				vga_buffer_put_str("\n");
-				vga_buffer_put_hex((u32int) ptr); // this should print 0xDEADC0DE
+				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
 			}
 			
