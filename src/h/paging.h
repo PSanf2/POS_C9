@@ -30,6 +30,7 @@ extern void write_cr3(u32int);
 void print_paging_info();
 void print_stack_info();
 void print_system_info();
+void print_page_fault_info(registers regs);
 
 // paging stack initilzation function.
 void paging_stack_initialize();
@@ -45,5 +46,7 @@ void paging_initialize(struct multiboot *mboot_ptr);
 
 // page fault handler
 void page_fault_interrupt_handler(registers regs);
+
+void invlpg(u32int addr);
 
 #endif

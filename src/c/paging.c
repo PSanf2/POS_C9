@@ -136,30 +136,8 @@ void paging_stack_initialize()
 		paging_stack_push(i);
 	}
 	
-	print_stack_info();
+	//print_stack_info();
 	
-	// doing a test to make sure it worked.
-	/*
-	for (u32int i = 0; i < 16; i++)
-	{
-		put_str("\n");
-		put_hex((u32int) page_stack_ptr);
-		put_str(" => ");
-		put_hex(paging_stack_pop());
-	}
-	// worked
-	*/
-	
-	/*
-	do
-	{
-		put_str("\n");
-		put_hex((u32int) page_stack_ptr);
-		put_str(" => ");
-		put_hex(paging_stack_pop());
-	} while (1);
-	// worked
-	*/
 }
 
 void paging_stack_push(u32int phys_addr)
@@ -204,7 +182,7 @@ u32int paging_stack_empty()
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-	put_str("\nInitializing paging...");
+	//put_str("\nInitializing paging...");
 	
 	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
@@ -242,7 +220,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	last_page_phys_addr = last_phys_mem_addr;
 	last_page_phys_addr &= ~(0xFFF);
 	
-	print_system_info();
+	//print_system_info();
 	
 	// get the stack of free pages set up.
 	// this stack will start returning physical memory address that are located after the grub space, kernel, and stack space.
@@ -307,15 +285,13 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// enable paging.
 	write_cr0((u32int) (read_cr0() | 0x80000000));
 	
-	print_paging_info();
+	//print_paging_info();
 	
-	put_str("\nDone initializing paging.\n");
+	//put_str("\nDone initializing paging.\n");
 }
 
-void page_fault_interrupt_handler(registers regs)
+void print_page_fault_info(registers regs)
 {
-	put_str("\nPage Fault Interrupt Handler called.");
-	
 	put_str("\nds=");
 	put_hex(regs.ds);
 	
@@ -376,34 +352,209 @@ void page_fault_interrupt_handler(registers regs)
 	
 	put_str("\ncr3 val is ");
 	put_hex(cr3_val);
+}
+
+void page_fault_interrupt_handler(registers regs)
+{
+	put_str("\nPage Fault Interrupt Handler called.");
+	
+	print_page_fault_info(regs);
 	
 	u32int present = regs.err_code & 0x1;
 	u32int rw = regs.err_code & 0x2;
 	u32int us = regs.err_code & 0x4;
-	u32int reserved = regs.err_code & 0x8;
-	u32int id = regs.err_code & 0x10;
 	
 	put_str("\nError code evaluation:");
 	if (present) put_str(" P");
 	if (rw) put_str(" R/W");
 	if (us) put_str(" U/S");
-	if (reserved) put_str(" RSVD");
-	if (id) put_str(" I/D");
 	
-	// everything above this line is for testing and debugging
-	
-	// evaluate the error code that's been pushed to the stack
-	// cr2 register will hold the linear address that caused the exception on a page-not-present exception.
-	// upper 10 bits will be the page directory entry, middle 10 bits will be the page table entry
-	// check to see if the page directory entry present bit is set
-	// if not, set up a page table, point the page directory entry to the base address of the page table, set the present bit, iretd
-	// will need to map some physical memory to the page table, set the present bit, call invlpg, iretd
-	
-	// here's where I'll be doing the actual paging code.
-	
-	// everything below this line is for testing and debugging.
+	if (!present)
+	{
+		put_str("\nPage not present.");
+		
+		u32int faulting_virt_addr = read_cr2();
+		
+		put_str("\nFaulting address: ");
+		put_hex(faulting_virt_addr);
+		
+		u32int page_dir_index = faulting_virt_addr >> 22; // get the first 10 bits from the faulting address
+		
+		put_str("\nPage directory index: ");
+		put_dec(page_dir_index);
+		
+		u32int page_table_index = (faulting_virt_addr >> 12) & 0x3FF;
+		
+		put_str("\nPage table index: ");
+		put_dec(page_table_index);
+		
+		u32int page_offset = faulting_virt_addr & 0xFFF;
+		
+		put_str("\nPage offset: ");
+		put_dec(page_offset);
+		
+		// check to see if there's a page table at that index in the page directory
+		// if not, i'll need to create a page table, and put it at that index
+		
+		put_str("\npage_directory[");
+		put_dec(page_dir_index);
+		put_str("] => ");
+		put_hex(page_directory[page_dir_index]);
+		
+		// i'll be using virtual address 0xA000 (and maybe 0xB000) for tempoary mappings to create page directories and page tables.
+		// remember to restore the original values when done!
+		// save the mapping information for page_table[10]
+		
+		
+		// if the present bit at page_directory[page_dir_index] == 0 then there is no page table
+		if ((page_directory[page_dir_index] & 0x1) == 0)
+		{
+			put_str("\nPage table not found.");
+			
+			u32int PT10_temp = page_table[10];
+		
+			put_str("\nValue of page_table[10] is ");
+			put_hex(page_table[10]);
+			
+			// get a physical address for the new page
+			u32int new_table_phys_addr = paging_stack_pop();
+			
+			put_str("\nNew page table physical address will be ");
+			put_hex(new_table_phys_addr);
+			
+			// map the new page to 0xA000
+			page_table[10] = new_table_phys_addr | 3;
+			
+			// for testing
+			put_str("\nValue of page_table[10] is ");
+			put_hex(page_table[10]);
+			
+			// create a pointer to the new page
+			u32int new_page_table_addr = 0xA000;
+			u32int *new_page_table;
+			new_page_table = (u32int *) new_page_table_addr;
+			
+			// clear it
+			memset((u8int *) new_page_table, 0, 4096);
+			
+			// create the page table
+			for (int i = 0; i < 1024; i++)
+			{
+				new_page_table[i] = 0 | 2; // supervisor, read/write, not present
+			}
+			
+			// put the physical address of the new page table on the page directory at the proper index, and set the attributes
+			page_directory[page_dir_index] = (u32int) new_table_phys_addr | 3; // supervisor, read/write, present.
+			
+			// restore the value of the old mapping
+			page_table[10] = PT10_temp;
+			
+			// for testing
+			put_str("\nValue of page_table[10] is ");
+			put_hex(page_table[10]);
+			
+		}
+		
+		put_str("\npage_directory[");
+		put_dec(page_dir_index);
+		put_str("] => ");
+		put_hex(page_directory[page_dir_index]);
+		
+		// i now need to check if the page is present on the page table, and map a new page if needed
+		// i already know that the page is not present because that's what caused the page fault
+		// i need to get a physical address for a new page
+		// map the page table to somewhere so i can manipulate it
+		// put the physical address of the new page on the page table at the proper index
+		// and set the attributes on the page table
+		// restore the original mapping
+		
+		// i don't think i should zero the new page. if there's garbage in there, then oh well.
+		// i don't want to clear it because it may have been previously written to, and have infomration that something does want to read.
+		
+		// get the physical address of the page table
+		u32int table_phys_addr = page_directory[page_dir_index] & ~(0xFFF);
+		
+		put_str("\nPhysical address for page table: ");
+		put_hex(table_phys_addr);
+		
+		// get the attributes for that page table
+		u32int table_attribs = page_directory[page_dir_index] & 0xFFF;
+		
+		put_str("\nPage table attributes: ");
+		put_hex(table_attribs);
+		
+		// create a temp var to hold the original mapping of the virtual address i'll be using
+		u32int PT10_temp = page_table[10];
+		
+		put_str("\nValue of page_table[10] is ");
+		put_hex(page_table[10]);
+		
+		// map the page table to 0xA000
+		page_table[10] = table_phys_addr | table_attribs;
+		
+		put_str("\nValue of page_table[10] is ");
+		put_hex(page_table[10]);
+		
+		// create a pointer to the page table so i can alter it
+		u32int *table;
+		table = (u32int *) 0xA000;
+		
+		// testing the pointer and the values in the table
+		put_str("\ntable[");
+		put_dec(page_table_index);
+		put_str("] => ");
+		put_hex(table[page_table_index]);
+		
+		// get a physical address for the new page
+		u32int new_page_phys_addr = paging_stack_pop();
+		
+		put_str("\nPhysical address for new page will be ");
+		put_hex(new_page_phys_addr);
+		
+		// put the address on the page table with the proper attributes
+		table[page_table_index] = new_page_phys_addr | table_attribs;
+		
+		// testing
+		put_str("\ntable[");
+		put_dec(page_table_index);
+		put_str("] => ");
+		put_hex(table[page_table_index]);
+		
+		// restore the original mapping for 0xA000
+		page_table[10] = PT10_temp;
+		
+		put_str("\nValue of page_table[10] is ");
+		put_hex(page_table[10]);
+		
+		invlpg((faulting_virt_addr & ~(0xFFF)));
+		
+	}
+	else if (us)
+	{
+		u32int cr2_val = read_cr2();
+		put_str("\nProtection fault. Memory at ");
+		put_hex(cr2_val);
+		put_str(" is reserved for supervisor.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	}
+	else
+	{
+		put_str("\nUnknown page fault exception has occured.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	}
 	
 	put_str("\nEnd of page fault interrupt handler.");
+}
+
+void invlpg(u32int addr)
+{
+	asm volatile ("invlpg (%0)" : : "b" (addr) : "memory");
 }
 
 

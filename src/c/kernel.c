@@ -107,7 +107,7 @@ void terminal()
 			
 			else if (strcmp((string) token, "read_fault") == 0)
 			{
-				u32int *ptr = (u32int *) 0xA0000000;
+				u32int *ptr = (u32int *) 0xDEADC0DE;
 				u32int do_fault = *ptr;
 				vga_buffer_put_str("\n");
 				vga_buffer_put_hex(do_fault); // this should print whatever garbage is in logical address 0xA0000000
