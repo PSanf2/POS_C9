@@ -2,28 +2,28 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = 1M;
+	. = 0xC0100000;
 	start = .;
-	.text : ALIGN(4K)
+	.text : AT(ADDR(.text) - 0xC0000000)
 	{
 		*(.multiboot)
 		code = .;
 		*(.text)
 	}
 
-	.data : ALIGN(4K)
+	.data : AT(ADDR(.data) - 0xC0000000)
 	{
 		data = .;
 		*(.data)
 	}
 
-	.rodata : ALIGN(4K)
+	.rodata : AT(ADDR(.rodata) - 0xC0000000)
 	{
 		rodata = .;
 		*(.rodata)
 	}
 
-	.bss : ALIGN(4K)
+	.bss : AT(ADDR(.bss) - 0xC0000000)
 	{
 		bss = .;
 		*(.bss)

@@ -5,6 +5,10 @@
 .set FLAGS,		ALIGN | MEMINFO
 .set CHECKSUM,	-(MAGIC + FLAGS)
 
+# Setting the virtual base address for the kernel
+.set KERNEL_VIRTUAL_BASE,	0xC0000000					# 3G
+.set KERNEL_PAGE_NUMBER,	(KERNEL_VIRTUAL_BASE >> 22)	# Page directory index for kernels page
+
 .global .multiboot
 .extern code
 .extern bss
@@ -21,6 +25,28 @@
 	.long end
 	.long _start
 
+.section .data
+	.align 0x1000
+	BootPageDirectory:
+		# this set up the page directory, and identity maps the first 4MB using 4KB pages
+		.long 0x00000003
+		.rept (KERNEL_PAGE_NUMBER - 1)
+			.long 0
+		.endr
+		.long 0x00000003
+		.rept (1024 - KERNEL_PAGE_NUMBER - 1)
+			.long 0
+		.endr
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
 .section .text
 	.global _start
 	.extern kernel_main
@@ -34,3 +60,16 @@
 			jmp .hang
 
 .size _start, . - _start
+
+
+
+
+
+
+
+
+
+
+
+
+
