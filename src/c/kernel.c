@@ -122,6 +122,10 @@ void terminal()
 				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
 			}
+			else if (strcmp((string) token, "paging_info") == 0)
+			{
+				paging_print_info();
+			}
 			
 			// else if () {}
 			// else if () {}

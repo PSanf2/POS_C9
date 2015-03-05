@@ -41,4 +41,6 @@ void page_fault_interrupt_handler(registers regs);
 
 void invlpg(u32int addr);
 
+void paging_print_info();
+
 #endif

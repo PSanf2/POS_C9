@@ -4,7 +4,7 @@
 extern u32int start;
 extern u32int end;
 
-__attribute__((unused)) static u32int kernel_start = (u32int) &start;
+static u32int kernel_start = (u32int) &start;
 static u32int kernel_end = (u32int) &end;
 
 // static (visable only inside this file) variables i want to use to keep track of things as I go along.
@@ -30,6 +30,55 @@ static u32int *page_stack_high;
 // static pointers i'll need to enable paging
 static u32int *page_directory;
 static u32int *page_table;
+
+void paging_print_info()
+{
+	// this is just going to be a general printing function to give me more information about the system
+	put_str("\nPAGING INFORMATION");
+	
+	put_str("\nAvailable memory: ");
+	put_dec(mem_in_mb);
+	put_str(" MB = ");
+	put_dec(mem_in_kb);
+	put_str(" KB = ");
+	put_dec(mem_in_bytes);
+	put_str(" bytes");
+	
+	put_str("\nTotal pages: ");
+	put_dec(tot_phys_pages);
+	
+	put_str("\nKernel start: ");
+	put_hex(kernel_start);
+	put_str(" Kernel end: ");
+	put_hex(kernel_end);
+	
+	put_str("\nFirst page after kernel: ");
+	put_hex(first_page_after_kernel_phys_addr);
+	
+	put_str("\nStack low: ");
+	put_hex((u32int) page_stack_low);
+	put_str(" Stack high: ");
+	put_hex((u32int) page_stack_high);
+	
+	put_str("\nStack Pointer: ");
+	put_hex((u32int) page_stack_ptr);
+	put_str(" Size: ");
+	put_dec(stack_size_in_bytes);
+	put_str(" bytes");
+	
+	put_str("\nPage directory: ");
+	put_hex((u32int) page_directory);
+	put_str(" Page Table: ");
+	put_hex((u32int) page_table);
+	
+	put_str("\nLast page table: ");
+	put_hex(last_page_phys_addr);
+	
+	put_str("\nLast physical memory address: ");
+	put_hex(last_phys_mem_addr);
+	
+	put_str("\n");
+}
 
 void paging_stack_initialize()
 {
@@ -154,11 +203,9 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	last_page_phys_addr = last_phys_mem_addr;
 	last_page_phys_addr &= ~(0xFFF);
 	
-	//print_system_info();
-	
 	// get the stack of free pages set up.
 	// this stack will start returning physical memory address that are located after the grub space, kernel, and stack space.
-	// i'll be able to use the stack to get free page addresses.
+	// i'll be able to use the stack to get free page physical addresses.
 	paging_stack_initialize();
 	
 	// i'm going to identity map the grub space, kernel, paging stack, one page directory, and one page table.
@@ -194,7 +241,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	u32int phys_addr_counter = 0x0;
 	for (int i = 0; i < 1024; i++)
 	{
-		// if the address i'm wanting to put on the page table is less than or equal the address of the page table...
+		// if the address i'm wanting to put on the page table is less than or equal than the address of the page table...
 		// (if i mapped the first 4MB of memory then i'd be shooting myself in the foot because of the initial values on the stack)
 		if (phys_addr_counter <= page_table_phys_addr)
 		{
@@ -223,7 +270,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 void page_fault_interrupt_handler(registers regs)
 {
 	u32int present = regs.err_code & 0x1;
-	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2;
+	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2; // not used now, but may be used later.
 	u32int us = regs.err_code & 0x4;
 	
 	if (!present)
@@ -240,7 +287,7 @@ void page_fault_interrupt_handler(registers regs)
 		// check to see if there's a page table at that index in the page directory
 		// if not, i'll need to create a page table, and put it at that index
 		
-		// i'll be using virtual address 0xA000 (and maybe 0xB000) for tempoary mappings to create page directories and page tables.
+		// i'll be using virtual address 0xA000 for tempoary mappings to create new page directories and new page tables.
 		// remember to restore the original values when done!
 		// save the mapping information for page_table[10]
 		
@@ -276,7 +323,7 @@ void page_fault_interrupt_handler(registers regs)
 			// restore the value of the old mapping
 			page_table[10] = PT10_temp;
 			
-			//write_cr3(read_cr3()); // dunno why, testing something
+			//write_cr3(read_cr3()); // dunno why. yuri has this, but it doesn't seem to be needed.
 			
 		}
 		
@@ -316,6 +363,7 @@ void page_fault_interrupt_handler(registers regs)
 		// restore the original mapping for 0xA000
 		page_table[10] = PT10_temp;
 		
+		// tell the TLB that the page table entry has been updated.
 		invlpg((faulting_virt_addr & ~(0xFFF)));
 		
 		return;
