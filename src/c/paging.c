@@ -10,7 +10,7 @@ void paging_print_info()
 void paging_initialize(struct multiboot *mboot_ptr)
 {
 	put_str("\nPAGING INITIALIZATION FUNCTION CALLED.");
-	
+	for (;;) {}
 }
 
 void page_fault_interrupt_handler(registers regs)

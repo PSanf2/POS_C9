@@ -11,6 +11,7 @@ static char terminal_seperator = '>';
 
 int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
+	
 	initial_esp = initial_stack;
 	
 	gdt_initialize();
