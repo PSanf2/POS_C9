@@ -11,20 +11,18 @@
 	.long MAGIC
 	.long FLAGS
 	.long CHECKSUM
-	.align 0x1000
 
 # stuff for a stack
 .section .stack, "aw", @nobits
 	stackBottom:
 		.skip 0x4000
 	stackTop:
-	
+
 # Constants needed to translate physical addresses to virtual addresses
 .set KERNEL_VIRTUAL_BASE,	0xC0000000
 .set KERNEL_PAGE_NUM,		(KERNEL_VIRTUAL_BASE >> 22);
 
 .section .data
-	
 	# Set up the boot page directory for 4KB pages
 	.align 0x1000
 	BootPageDirectory:
@@ -36,15 +34,14 @@
 		.long 0x00000083
 		# Empty PDEs
 		.fill (1024 - KERNEL_PAGE_NUM - 1), 4, 0x00000000
-		
-.section .text
-	
-	# This is where the system will start processing from.
-	.global _setup
-	.type _setup, @function
-	_setup:
+
+.section .setup
+	.global _start
+	.type _start, @function
+	_start:
 		# Put the address of the page directory on CR3
-		movl (BootPageDirectory - KERNEL_VIRTUAL_BASE), %ecx
+		lea (BootPageDirectory), %ecx
+		sub KERNEL_VIRTUAL_BASE, %ecx
 		movl %ecx, %cr3
 		
 		# Set the PSE bit on CR4 to enable 4MB pages (I can change this in the kernel to use 4KB pages)
@@ -59,10 +56,10 @@
 		
 		lea (_startHigherHalf), %ecx
 		jmp *%ecx
-	
-	# Declare my kernel main function to be global.
+
+.section .text
 	.extern kernel_main
-	
+	.global _startHigherHalf
 	.type _startHigherHalf, @function
 	_startHigherHalf:
 		# unmapped the first 4MB of virtual addresses, which were identity mapped
@@ -71,8 +68,6 @@
 		
 		movl $stackTop, %esp
 		
-		add KERNEL_VIRTUAL_BASE, %ebx
-		
 		push %esp
 		push %ebx
 		cli
@@ -80,19 +75,3 @@
 		
 		.hang:
 			jmp .hang
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
