@@ -1,9 +1,5 @@
 #include <system.h>
 
-// nothing
-
-#define MAX_TERMINAL_BUFFER_SIZE 4096
-
 u32int initial_esp;
 
 static char terminal_buffer[MAX_TERMINAL_BUFFER_SIZE];
