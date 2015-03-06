@@ -1,31 +1,40 @@
-ENTRY(_start)
+ENTRY(_loader)
 
 SECTIONS
 {
-	. = 1M;
+	
+	. = 0x00100000;
+	
+	.setup : ALIGN(0x1000)
+	{
+		*(.setup)
+	}
+	
+	. += 0xC0000000;
+	
 	start = .;
-	.text : ALIGN(4K)
+	
+	.text : AT(ADDR(.text) - 0xC0000000)
 	{
 		*(.multiboot)
-		code = .;
 		*(.text)
 	}
-
-	.data : ALIGN(4K)
-	{
-		data = .;
-		*(.data)
-	}
-
-	.rodata : ALIGN(4K)
+	
+	.rodata ALIGN(0x1000) : AT(ADDR(.rodata) - 0xC0000000)
 	{
 		*(.rodata)
 	}
-
-	.bss : ALIGN(4K)
+	
+	.data ALIGN(0x1000) : AT(ADDR(.data) - 0xC0000000)
 	{
-		bss = .;
-		*(.bss)
+		*(.data)
 	}
+	
+	.bss ALIGN(0x1000) : AT(ADDR(.bss) - 0xC0000000)
+	{
+		*(.bss)
+		*(.stack)
+	}
+	
 	end = .;
 }
