@@ -1,5 +1,7 @@
 #include <system.h>
 
+// nothing
+
 #define MAX_TERMINAL_BUFFER_SIZE 4096
 
 u32int initial_esp;
