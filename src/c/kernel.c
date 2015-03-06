@@ -1,5 +1,7 @@
 #include <system.h>
 
+#define MAX_TERMINAL_BUFFER_SIZE 4096
+
 u32int initial_esp;
 
 static char terminal_buffer[MAX_TERMINAL_BUFFER_SIZE];
@@ -9,7 +11,6 @@ static char terminal_seperator = '>';
 
 int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
-	
 	initial_esp = initial_stack;
 	
 	gdt_initialize();

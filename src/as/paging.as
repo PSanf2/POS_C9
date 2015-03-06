@@ -13,7 +13,6 @@
 		mov 8(%esp), %eax
 		mov %eax, %cr0
 		mov %ebp, %esp
-		
 		pop %ebp
 		ret
 
@@ -22,7 +21,7 @@
 	read_cr2:
 		mov %cr2, %eax
 		ret
-	
+
 	.global write_cr2
 	.type write_cr2, @function
 	write_cr2:
@@ -50,7 +49,7 @@
 		mov %ebp, %esp
 		pop %ebp
 		ret
-	
+
 	.global read_cr4
 	.type read_cr4, @function
 	read_cr4:
