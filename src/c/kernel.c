@@ -11,6 +11,11 @@ static char terminal_seperator = '>';
 
 int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
+	
+	u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1;
+	// doesn't work
+	
+	
 	initial_esp = initial_stack;
 	
 	gdt_initialize();

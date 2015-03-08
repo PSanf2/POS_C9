@@ -36,12 +36,21 @@
 		# Empty PDEs
 		.fill (1024 - KERNEL_PAGE_NUM - 1), 4, 0x00000000
 
-.section .setup
+.section .setup, "ax", @progbits
 	.global _loader
 	_loader:
+		
+		#  this gives me flashy stuff on the console.
+		# proves the function is getting called.
+		#tmp:
+		#	add $1, 0xB8000
+		#	jmp tmp
+		# works
+	
+	
 		# Put the address of the page directory on CR3
-		lea (BootPageDirectory), %ecx
-		sub $KERNEL_VIRTUAL_BASE, %ecx
+		lea (BootPageDirectory - KERNEL_VIRTUAL_BASE), %ecx
+		#sub $KERNEL_VIRTUAL_BASE, %ecx
 		movl %ecx, %cr3
 		
 		# Set the PSE bit on CR4 to enable 4MB pages (I can change this in the kernel to use 4KB pages)
@@ -60,16 +69,63 @@
 .section .text
 	.extern kernel_main
 	_startHigherHalf:
+	
+		#tmp:
+		#	add $1, 0xB8000
+		#	jmp tmp
+		# works
+	
+	
 		# unmapped the first 4MB of virtual addresses, which were identity mapped
 		movl $0x00000000, (BootPageDirectory)
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
+		
+		
 		invlpg (0)
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
 		
 		movl $stackTop, %esp
 		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
+		
 		push %esp
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
+		
 		push %ebx
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
+		
 		cli
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# works
+		
 		call kernel_main
+		
+		#tmp:
+		#	add $1, 0xC00B8000
+		#	jmp tmp
+		# does nothing, as expected
 		
 		.hang:
 			jmp .hang
