@@ -10,7 +10,11 @@ static u16int terminal_last_put = 0;
 static char terminal_seperator = '>';
 
 int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
-{	
+{
+	// the first thing i should do is initalize the paging.
+	// this is where i should initialize paging
+	//paging_initialize(mboot_ptr); // this looks like where i'm getting stuck
+	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // doesn't work if i attempt to initialize paging.
 	
 	initial_esp = initial_stack;
 	
@@ -31,10 +35,6 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	vga_set_handler(kernel_vga_handler);
 	
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
-	
-	// this is where i should initialize paging
-	paging_initialize(mboot_ptr); // this looks like where i'm getting stuck
-	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // doesn't work
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	

@@ -24,7 +24,7 @@
 .set KERNEL_PAGE_NUM,		(KERNEL_VIRTUAL_BASE >> 22);
 
 .section .data
-	# Set up the boot page directory for 4KB pages
+	# Set up the boot page directory for 4MB pages
 	.align 0x1000
 	BootPageDirectory:
 		# The first page directory entry, attributes read/write, present
@@ -36,21 +36,13 @@
 		# Empty PDEs
 		.fill (1024 - KERNEL_PAGE_NUM - 1), 4, 0x00000000
 
+# Declare the setup function that GRUB will call first.
 .section .setup, "ax", @progbits
 	.global _loader
 	_loader:
 		
-		#  this gives me flashy stuff on the console.
-		# proves the function is getting called.
-		#tmp:
-		#	add $1, 0xB8000
-		#	jmp tmp
-		# works
-	
-	
 		# Put the address of the page directory on CR3
 		lea (BootPageDirectory - KERNEL_VIRTUAL_BASE), %ecx
-		#sub $KERNEL_VIRTUAL_BASE, %ecx
 		movl %ecx, %cr3
 		
 		# Set the PSE bit on CR4 to enable 4MB pages (I can change this in the kernel to use 4KB pages)
@@ -63,69 +55,35 @@
 		orl $0x80000000, %ecx
 		movl %ecx, %cr0
 		
+		# Get the effective address of _startHigherHalf, which is located at the high virtual address 0xC010000
 		lea (_startHigherHalf), %ecx
+		# Jump to the next function
 		jmp *%ecx
 
+# Declare the function that will be used to start the kernel.
 .section .text
 	.extern kernel_main
 	_startHigherHalf:
-	
-		#tmp:
-		#	add $1, 0xB8000
-		#	jmp tmp
-		# works
-	
-	
-		# unmapped the first 4MB of virtual addresses, which were identity mapped
+		
+		# Unmap the first 4MB of virtual addresses, which were identity mapped.
 		movl $0x00000000, (BootPageDirectory)
-		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
-		
-		
 		invlpg (0)
 		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
-		
+		# Set up the parameters that will be passed to the kernel.
+		# Push the address of the stack on to the stack.
 		movl $stackTop, %esp
-		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
-		
 		push %esp
 		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
+		# Push the address of the multiboot header onto the stack.
 		add $KERNEL_VIRTUAL_BASE, %ebx
 		push %ebx
 		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
-		
+		# Disable the interupts.
 		cli
 		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# works
-		
+		# Call the kernel.
 		call kernel_main
 		
-		#tmp:
-		#	add $1, 0xC00B8000
-		#	jmp tmp
-		# does nothing, as expected
-		
+		# Hang up if something goes wrong.
 		.hang:
 			jmp .hang
