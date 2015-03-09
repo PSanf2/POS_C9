@@ -105,7 +105,7 @@
 		#	add $1, 0xC00B8000
 		#	jmp tmp
 		# works
-		
+		add $KERNEL_VIRTUAL_BASE, %ebx
 		push %ebx
 		
 		#tmp:

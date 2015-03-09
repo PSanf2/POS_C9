@@ -1,6 +1,6 @@
 #include <vga.h>
 
-u16int *vga_mem = (u16int *) 0xB8000;
+u16int *vga_mem = (u16int *) 0xC00B8000;
 u8int attrib = 0x0F;
 u8int csr_x = 0;
 u8int csr_y = 0;

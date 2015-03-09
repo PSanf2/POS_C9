@@ -169,18 +169,23 @@ void paging_initialize(struct multiboot *mboot_ptr)
 {
 	// make sure I have a memory map from the kernel.
 	// if i don't have a memory map
+	
+	// something in this conditional is causing the system to hang
 	if (!(mboot_ptr->flags & 0x40))
 	{
 		// throw a fit, and refuse to play any more.
 		put_str("\nGRUB failed to provide a memory map. Unable to initialize paging.");
 		put_str("\nHalting.");
-		for (;;) {}
 	}
-	
+	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1;
 	// gather information.
 	
 	// figure out how much memory i have in MB
 	mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
+	
+	put_str("\nMemory in MB: ");
+	put_dec(mem_in_mb);
+	for(;;) {}
 	
 	// figure out how much that is in KB.
 	mem_in_kb = mem_in_mb * 1024;
