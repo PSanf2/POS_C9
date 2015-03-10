@@ -16,6 +16,8 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	//paging_initialize(mboot_ptr); // this looks like where i'm getting stuck
 	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // doesn't work if i attempt to initialize paging.
 	
+	paging_initialize(mboot_ptr);
+	
 	initial_esp = initial_stack;
 	
 	gdt_initialize();
@@ -38,7 +40,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	set_text_color(LIGHT_GREY, BLUE);
 	
-	clear_screen();
+	//clear_screen();
 	
 	vga_buffer_put_str("Welcome to Patrick's Operating System!\n");
 	vga_buffer_put_char(terminal_seperator);
@@ -131,10 +133,13 @@ void terminal()
 				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
 			}
+			
+			/*
 			else if (strcmp((string) token, "paging_info") == 0)
 			{
 				paging_print_info();
 			}
+			*/
 			
 			// else if () {}
 			// else if () {}
