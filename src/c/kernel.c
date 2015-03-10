@@ -16,7 +16,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	//paging_initialize(mboot_ptr); // this looks like where i'm getting stuck
 	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // doesn't work if i attempt to initialize paging.
 	
-	paging_initialize(mboot_ptr);
+	//paging_initialize(mboot_ptr);
 	
 	initial_esp = initial_stack;
 	
@@ -25,6 +25,8 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	idt_initialize();
 	
 	memset((u8int *) &interrupt_handler, 0, sizeof(isr) * 256);
+	
+	paging_initialize(mboot_ptr);
 	
 	enable_interrupts();
 	
