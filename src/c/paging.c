@@ -12,6 +12,13 @@ static u32int *page_table;
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
+	if (!(mboot_ptr->flags & 0x40))
+	{
+		// throw a fit, and refuse to play any more.
+		put_str("\nGRUB failed to provide a memory map. Unable to initialize paging.");
+		put_str("\nHalting.");
+	}
+	
 	put_str("\nInitializing paging...");
 	
 	// gather information.
