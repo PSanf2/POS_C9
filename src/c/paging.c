@@ -38,6 +38,10 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	put_hex(kernel_end);
 	// done printing initial information.
 	
+	// i need to initialize my bitmap to make sure it's cleared out, and
+	// ready to start keeping track of which frames are being used.
+	bitmap_initialize(tot_4kb_pages);
+	
 	// figure out the address that i want to use for my new page table.
 	u32int new_page_table_virt_addr = kernel_end;
 	new_page_table_virt_addr &= ~(0xFFF);
@@ -86,6 +90,17 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// clear out the 4kb of space needed for the page table.
 	memset((u8int *) page_table, 0, 4096);
 	
+	
+	
+	
+	
+	
+	// this area is going to start causing problems once the kernel gets
+	// above 4MB in size. i won't be mapping the crap beyond the initial
+	// 4MB, and i'll start getting page faults.
+	// i'll need to make sure i keep all of the system vital stuff
+	// below 4MB until i can start mapping other stuff in.
+	
 	// create a page table for the new mappings.
 	u32int phys_addr_ctr = 0x0;
 	for (int i = 0; i < 1024; i++)
@@ -93,13 +108,21 @@ void paging_initialize(struct multiboot *mboot_ptr)
 		if (phys_addr_ctr <= temp_page_dir_phys_addr)
 		{
 			page_table[i] = phys_addr_ctr | 3; // attributes supervisor, read/write, present
+			set_frame(phys_addr_ctr);
 		}
 		else
 		{
-			break;
+			page_table[i] = 0 | 2;
 		}
 		phys_addr_ctr += 0x1000;
 	}
+	
+	
+	
+	
+	
+	
+	
 	
 	// the kernel is being mapped to 0xC0000000 so i need to figure out the proper index on the page directory for that address.
 	u32int kernel_page_dir_index = 0xC0000000 >> 22;
@@ -174,25 +197,21 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// tell the system to use the new page directory
 	write_cr3(page_directory_phys_addr);
 	
+	// i no longer need the physical page for the temp page directory, and
+	// should tell the bitmap to free the frame.
+	clear_frame(temp_page_dir_phys_addr);
+	
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
 	
 	put_str("\nAddress of page fault interrupt hanlder: ");
 	put_hex((u32int) &page_fault_interrupt_handler);
 	
-	put_str("\nPaging initialized.\n");
+	put_str("\nFirst free fame: ");
+	put_hex(first_free());
 	
-	// now i need to set up my bitmap stuff for my physical memory manager
-	// i'll want to recycle the space used for the temp page directory for this.
-	// that'll be easy to do since i already have it mapped, and know what the virtual address for it is.
-	// temp_page_dir_virt_addr is the page where i'll want to put the bitmap.
-	// i'll be able to figure out what areas of physical memory are occupied by looking at the temp_page_dir_phys_addr value.
-	// all of the pages up to, and including that value are occupied. everything else is free.
+	put_str("\nPaging initialized.");
 	
-	// for a 4GB system i would have 1,048,576 pages of memory, which would require a 128KB bitmap to represent them all
-	// i'd need 32 page tables to hold them all
-	
-	//put_str("\n");
 	//put_str("\nHalting");
 	//for(;;) {}
 }

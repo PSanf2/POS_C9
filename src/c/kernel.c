@@ -120,7 +120,7 @@ void terminal()
 			
 			else if (strcmp((string) token, "read_fault") == 0)
 			{
-				u32int *ptr = (u32int *) 0xDEADC0DE;
+				u32int *ptr = (u32int *) 0xBADC0DE;
 				u32int do_fault = *ptr;
 				vga_buffer_put_str("\n");
 				vga_buffer_put_hex(do_fault); // this should print whatever garbage is in logical address 0xA0000000
@@ -130,7 +130,7 @@ void terminal()
 			else if (strcmp((string) token, "write_fault") == 0)
 			{
 				u32int *ptr = (u32int *) 0xA0000000;
-				*ptr = 0xDEADC0DE;
+				*ptr = 0xBADC0DE;
 				vga_buffer_put_str("\n");
 				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
