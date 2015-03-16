@@ -8,9 +8,9 @@ static u32int kernel_start = (u32int) &start;
 static u32int kernel_end = (u32int) &end;
 
 static u32int *page_directory;
-//static u32int *page_table; // this isn't really needed
 
-static u32int *bitmap;
+static u8int *bitmap;
+static u32int max_index;
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
@@ -89,11 +89,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// clear out the 4kb of space needed for the page table.
 	memset((u8int *) page_table, 0, 4096);
 	
-	
-	
-	
-	
-	
 	// this area is going to start causing problems once the kernel gets
 	// above 4MB in size. i won't be mapping the crap beyond the initial
 	// 4MB, and i'll start getting page faults.
@@ -114,13 +109,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 		}
 		phys_addr_ctr += 0x1000;
 	}
-	
-	
-	
-	
-	
-	
-	
 	
 	// the kernel is being mapped to 0xC0000000 so i need to figure out the proper index on the page directory for that address.
 	u32int kernel_page_dir_index = 0xC0000000 >> 22;
@@ -203,7 +191,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// FFC0 1000 = page table 1
 	// FFC0 2000 = page table 2
 	// etc...
-	// FFF0 0000 = page table 1023
+	// FFFF F000 = page table 1023
 	
 	// the virtual address for the page table for the kernel should be at
 	// I NEED TO FIGURE THIS OUT TO USE THIS PROPERLY
@@ -291,12 +279,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// it's already there from a previous mapping. i just need to clear it out
 	// and reuse it as a page table.
 	
-	
-	
-	
-	
-	
-	
 	// get the virtual address for the bitmap page table
 	u32int bitmap_page_table_virt_addr = temp_page_dir_virt_addr;
 	
@@ -346,7 +328,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	put_hex(page_directory[1022]);
 	
 	// make a pointer for the bitmap.
-	bitmap = (u32int *) 0xFFB00000;
+	bitmap = (u8int *) 0xFFB00000;
 	
 	/*
 	// test it out
@@ -358,6 +340,50 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// works
 	*/
 	
+	// figure out the max index of the bitmap array
+	max_index = (tot_4kb_pages / 64) - 1;
+	
+	// print it out
+	put_str("\nmax index: ");
+	put_dec(max_index);
+	
+	// clear the bitmap
+	for (u32int i = 0; i < tot_4kb_pages; i++)
+	{
+		clear_frame(i * 0x1000);
+	}
+	
+	// i now need to go over the page directory, and page tables to see
+	// which physical frames are being used.
+	
+	// in order to check the page tables i'll have to create a pointer
+	// to the proper virtual memory address based off the PD index
+	
+	// for each page directory entry
+	for (u32int i = 0; i < 1024; i++)
+	{
+		// if there's a page table present
+		if (page_directory[i] & 0x1)
+		{
+			set_frame(page_directory[i] & ~(0xFFF));
+			// now i need to figure out the virtual address where the
+			// page table will be recursivly mapped.
+			u32int virt_addr_base = 0xFFC00000;
+			u32int virt_addr_offset = i << 12;
+			u32int page_table_virt_addr = virt_addr_base + virt_addr_offset;
+			// make a pointer to that virtual address
+			u32int *page_table_ptr;
+			page_table_ptr = (u32int *) page_table_virt_addr;
+			
+			for (u32int j = 0; j < 1024; j++)
+			{
+				if (page_table_ptr[j] & 0x1)
+				{
+					set_frame(page_table_ptr[j] & ~(0x3FF));
+				}
+			}
+		}
+	}
 	
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
@@ -369,6 +395,49 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	//put_str("\nHalting");
 	//for(;;) {}
+}
+
+void set_frame(u32int frame_addr)
+{
+	u32int frame = frame_addr / 0x1000;
+	u32int index = frame / 64;
+	u32int offset = frame % 8;
+	bitmap[index] |= (0x1 << offset);
+}
+
+void clear_frame(u32int frame_addr)
+{
+	u32int frame = frame_addr / 0x1000;
+	u32int index = frame / 64;
+	u32int offset = frame % 8;
+	bitmap[index] &= (0x1 << offset);
+}
+
+u32int test_frame(u32int frame_addr)
+{
+	u32int frame = frame_addr / 0x1000;
+	u32int index = frame / 64;
+	u32int offset = frame % 8;
+	return (bitmap[index] & (0x1 << offset));
+}
+
+u32int first_free()
+{
+	for (u32int i = 0; i <= max_index; i++)
+	{
+		if (bitmap[i] != 0xFF)
+		{
+			for (u32int j = 0; j < 8; j++)
+			{
+				u32int test = (0x1 << j);
+				if (!(bitmap[i] & test))
+				{
+					return ((i * 64) + j) * 0x1000;
+				}
+			}
+		}
+	}
+	return 0xFFFFFFFF;
 }
 
 void page_fault_interrupt_handler(__attribute__((unused)) registers regs)

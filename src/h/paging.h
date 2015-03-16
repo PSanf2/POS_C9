@@ -25,6 +25,12 @@ extern void write_cr4(u32int);
 // paging initialization function
 void paging_initialize(struct multiboot *mboot_ptr);
 
+// stuff needed for the bitmap.
+void set_frame(u32int frame_addr);
+void clear_frame(u32int frame_addr);
+u32int test_frame(u32int frame_addr);
+u32int first_free();
+
 // page fault handler
 void page_fault_interrupt_handler(registers regs);
 
