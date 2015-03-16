@@ -15,7 +15,6 @@ static u32int max_index;
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-	put_str("\nInitializing paging...");
 	
 	// gather information.
 	u32int mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
@@ -24,52 +23,19 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	u32int page_directory_phys_addr = read_cr3();
 	u32int page_directory_virt_addr = page_directory_phys_addr + 0xC0000000;
 	
-	// print out the information to make sure i have everything.
-	put_str("\nMemory in MB: ");
-	put_dec(mem_in_mb);
-	put_str("\nMemory in KB: ");
-	put_dec(mem_in_kb);
-	put_str("\nTotal 4KB pages: ");
-	put_dec(tot_4kb_pages);
-	put_str("\nPage directory physical address: ");
-	put_hex(page_directory_phys_addr);
-	put_str("\nPage directory virtual address: ");
-	put_hex(page_directory_virt_addr);
-	put_str("\nKernel start: ");
-	put_hex(kernel_start);
-	put_str("\nKernel end: ");
-	put_hex(kernel_end);
-	// done printing initial information.
-	
 	// figure out the address that i want to use for my new page table.
 	u32int new_page_table_virt_addr = kernel_end;
 	new_page_table_virt_addr &= ~(0xFFF);
 	new_page_table_virt_addr += 0x1000;
 	
-	// print it out.
-	put_str("\nNew page table virt addr: ");
-	put_hex(new_page_table_virt_addr);
-	
 	// figure out the physical address for the new page table.
 	u32int new_page_table_phys_addr = new_page_table_virt_addr - 0xC0000000;
-	
-	// print it out.
-	put_str("\nNew page table phys addr: ");
-	put_hex(new_page_table_phys_addr);
 	
 	// get an address that i want to use for my temp page directory
 	u32int temp_page_dir_virt_addr = new_page_table_virt_addr + 0x1000;
 	
-	// print it out
-	put_str("\nTemp page directory virtual address: ");
-	put_hex(temp_page_dir_virt_addr);
-	
 	// figure out the physical address for that temp page directory.
 	u32int temp_page_dir_phys_addr = temp_page_dir_virt_addr - 0xC0000000;
-	
-	// print it out
-	put_str("\nTemp page directory physical address: ");
-	put_hex(temp_page_dir_phys_addr);
 	
 	// make a pointer to the temp page directory.
 	u32int *temp_page_directory = (u32int *) temp_page_dir_virt_addr;
@@ -113,32 +79,14 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// the kernel is being mapped to 0xC0000000 so i need to figure out the proper index on the page directory for that address.
 	u32int kernel_page_dir_index = 0xC0000000 >> 22;
 	
-	// print it out.
-	put_str("\nKernel page directory index: ");
-	put_dec(kernel_page_dir_index);
-	
 	// put the physical address of the page table on the page directory
 	temp_page_directory[kernel_page_dir_index] = new_page_table_phys_addr | 3; // attributes supervisor, read/write, present
-	
-	// print it out
-	put_str("\ntemp_page_directory[");
-	put_dec(kernel_page_dir_index);
-	put_str("] => ");
-	put_hex(temp_page_directory[kernel_page_dir_index]);
 	
 	// get the cr4 value
 	u32int new_cr4_val = read_cr4();
 	
-	// print it
-	put_str("\nnew cr4 val => ");
-	put_hex(new_cr4_val);
-	
 	// figure out what the new value should be
 	new_cr4_val &= ~(0x00000010);
-	
-	// print it
-	put_str("\nnew cr4 val => ");
-	put_hex(new_cr4_val);
 	
 	// i'll need to use an asm volatile statement here to move the new cr4 value, and the new page directory physical address into the control registers.
 	// i can't call any c functions to do this because doing so causes the whole system to triple fault as soon as either value is changed.
@@ -156,12 +104,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// set my actual page directory up in the proper place.
 	page_directory = (u32int *) page_directory_virt_addr;
 	
-	// make sure i'm writing to the correct place
-	put_str("\npage_directory[");
-	put_dec(kernel_page_dir_index);
-	put_str("] => ");
-	put_hex(page_directory[kernel_page_dir_index]);
-	
 	// clear out the space
 	memset((u8int *) page_directory, 0, 4096);
 	
@@ -173,12 +115,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	// put the physical address of the page table on the page directory
 	page_directory[kernel_page_dir_index] = new_page_table_phys_addr | 3; // attributes supervisor, read/write, present
-	
-	// make sure i did it
-	put_str("\npage_directory[");
-	put_dec(kernel_page_dir_index);
-	put_str("] => ");
-	put_hex(page_directory[kernel_page_dir_index]);
 	
 	// i now need to set up the stuff i'll need for the recursive mapping.
 	// i'll want to put the physical address of the page directory on
@@ -193,37 +129,12 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// etc...
 	// FFFF F000 = page table 1023
 	
-	// the virtual address for the page table for the kernel should be at
-	// I NEED TO FIGURE THIS OUT TO USE THIS PROPERLY
-	
 	// FFF0 0000 should be the virtual address for the kernel page table.
-	
-	// should i set up the entire range of virtual addresses for the page tables?
 	
 	page_directory[1023] = page_directory_phys_addr | 3; // supervisor, read/write, present
 	
 	// tell the system to use the new page directory
 	write_cr3(page_directory_phys_addr);
-	
-	/*
-	// print it out to verify the change was made
-	put_str("\npage_directory[");
-	put_dec(1023);
-	put_str("] => ");
-	put_hex(page_directory[1023]);
-	
-	u32int kernel_page_table_virt_addr = 0xFFF00000;
-	u32int *kernel_page_table_ptr = (u32int *) kernel_page_table_virt_addr;
-	
-	put_str("\nTrying it.\n");
-	put_hex(kernel_page_table_ptr[1]);
-	
-	// this works!
-	
-	// when i set up new page tables i shouldn't need to map their virtual addresses in order to write to them. that should all be automatic.
-	// i will need to make sure that i put a valid physical address for the page table on the page directory before attempting to write to it.
-	
-	*/
 	
 	// i now need to set up my bitmap.
 	// i'll need to figure out how large the bitmap will need to be in
@@ -240,18 +151,12 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	u32int bytes_needed_for_bitmap = tot_4kb_pages / 8;
 	
-	put_str("\nBytes needed for bitmap: ");
-	put_dec(bytes_needed_for_bitmap);
-	
 	u32int frames_needed_for_bitmap = bytes_needed_for_bitmap / 0x1000;
 	
 	if (bytes_needed_for_bitmap % 0x1000 != 0)
 	{
 		frames_needed_for_bitmap++;
 	}
-	
-	put_str("\nFrames needed for bitmap: ");
-	put_dec(frames_needed_for_bitmap);
 	
 	// in order to keep things simple i'm going to put my
 	// bitmap in the virtual address range right below what
@@ -267,31 +172,14 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	//page_directory[1022] = temp_page_dir_phys_addr | 3; yes, but only after i setup the page table for the bitmap.
 	// that's where the page table for the bitmap will need to go
 	
-	/*
-	for (int i = 750; i < 780; i++)
-	{
-		put_str("\ntemp_page_directory[");
-		put_dec(i);
-		put_str("] => ");
-		put_hex(temp_page_directory[i]);
-	}
-	*/
 	// it's already there from a previous mapping. i just need to clear it out
 	// and reuse it as a page table.
 	
 	// get the virtual address for the bitmap page table
 	u32int bitmap_page_table_virt_addr = temp_page_dir_virt_addr;
 	
-	// print it out
-	put_str("\nbitmap page table virt addr: ");
-	put_hex(bitmap_page_table_virt_addr);
-	
 	// get the physical address for the bitmap page table
 	u32int bitmap_page_table_phys_addr = temp_page_dir_phys_addr;
-	
-	// print it out
-	put_str("\nbitmap page table phys addr: ");
-	put_hex(bitmap_page_table_phys_addr);
 	
 	// make a pointer to it
 	u32int *bitmap_page_table;
@@ -309,10 +197,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// figure out the physical address where the bitmap will start
 	u32int bitmap_phys_addr = bitmap_page_table_phys_addr + 0x1000;
 	
-	// print it out
-	put_str("\nBitmap phys addr: ");
-	put_hex(bitmap_phys_addr);
-	
 	// put the required pages on the bitmap page table
 	u32int bitmap_phys_addr_ctr = bitmap_phys_addr;
 	for (u32int i = 768; i < (768 + frames_needed_for_bitmap); i++)
@@ -323,29 +207,11 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// put the address of the bitmap page table on the page directory at the desired index
 	page_directory[1022] = bitmap_page_table_phys_addr | 3;
 	
-	// print it out
-	put_str("\npage_directory[1022] => ");
-	put_hex(page_directory[1022]);
-	
 	// make a pointer for the bitmap.
 	bitmap = (u8int *) 0xFFB00000;
 	
-	/*
-	// test it out
-	bitmap[0] = 0xDEADC0DE;
-	put_str("\nwrote deadcode.");
-	
-	put_str("\nbitmap[0] => ");
-	put_hex(bitmap[0]);
-	// works
-	*/
-	
 	// figure out the max index of the bitmap array
 	max_index = (tot_4kb_pages / 64) - 1;
-	
-	// print it out
-	put_str("\nmax index: ");
-	put_dec(max_index);
 	
 	// clear the bitmap
 	for (u32int i = 0; i < tot_4kb_pages; i++)
@@ -387,11 +253,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
-	
-	put_str("\nAddress of page fault interrupt hanlder: ");
-	put_hex((u32int) &page_fault_interrupt_handler);
-	
-	put_str("\nPaging initialized.\n");
 	
 }
 
@@ -495,11 +356,7 @@ void page_fault_interrupt_handler(registers regs)
 			// restore the value of the old mapping
 			page_table[10] = PT10_temp;
 			
-			
-			
 		}
-		
-		write_cr3(read_cr3()); // dunno why. yuri has this, but it doesn't seem to be needed.
 		
 		// i now need to check if the page is present on the page table, and map a new page if needed
 		// i already know that the page is not present because that's what caused the page fault
@@ -537,6 +394,8 @@ void page_fault_interrupt_handler(registers regs)
 		
 		// restore the original mapping for 0xA000
 		page_table[10] = PT10_temp;
+		
+		write_cr3(read_cr3()); // dunno why. yuri has this, but it seems to be needed.
 		
 		// tell the TLB that the page table entry has been updated.
 		invlpg((faulting_virt_addr & ~(0xFFF)));
