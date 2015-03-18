@@ -4,7 +4,7 @@
 extern u32int start;
 extern u32int end;
 
-static u32int kernel_start = (u32int) &start;
+__attribute__((unused)) static u32int kernel_start = (u32int) &start;
 static u32int kernel_end = (u32int) &end;
 
 static u32int *page_directory;
@@ -331,6 +331,15 @@ void page_fault_interrupt_handler(registers regs)
 			
 			// get a physical address for the new page
 			u32int new_table_phys_addr = first_free();
+			
+			if (new_table_phys_addr == 0xFFFFFFFF)
+			{
+				put_str("\nOut of physical memory.");
+				put_str("\nHalting.");
+				for (;;) {}
+			}
+			
+			
 			set_frame(new_table_phys_addr);
 			
 			// map the new page to 0xA000
@@ -387,6 +396,14 @@ void page_fault_interrupt_handler(registers regs)
 		
 		// get a physical address for the new page
 		u32int new_page_phys_addr = first_free();
+		
+		if (new_page_phys_addr == 0xFFFFFFFF)
+		{
+			put_str("\nOut of physical memory.");
+			put_str("\nHalting.");
+			for (;;) {}
+		}
+		
 		set_frame(new_page_phys_addr);
 		
 		// put the address on the page table with the proper attributes
@@ -395,7 +412,8 @@ void page_fault_interrupt_handler(registers regs)
 		// restore the original mapping for 0xA000
 		page_table[10] = PT10_temp;
 		
-		write_cr3(read_cr3()); // dunno why. yuri has this, but it seems to be needed.
+		write_cr3(read_cr3()); // dunno why. yuri has this, and it seems to be needed.
+		// it's needed because of the way i'm doing temp mappings in order to create new page tables.
 		
 		// tell the TLB that the page table entry has been updated.
 		invlpg((faulting_virt_addr & ~(0xFFF)));

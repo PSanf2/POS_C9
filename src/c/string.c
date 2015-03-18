@@ -13,7 +13,7 @@ s32int strcmp(const string str1, const string str2)
 {
 	s32int val = 0;
 	s32int i = 0;
-	while (str1[i] != '\0')
+	while (str1[i] != '\0' || str2[i] != '\0')
 	{
 		if (str1[i] > str2[i])
 		{

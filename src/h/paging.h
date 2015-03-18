@@ -3,13 +3,6 @@
 
 #include <system.h>
 
-// structs I want to use to make things easier
-typedef struct memory_map_struct
-{
-	u32int addr;
-	u32int length;
-} __attribute__ ((packed)) memory_map;
-
 extern u32int read_cr0();
 extern void write_cr0(u32int);
 

@@ -76,8 +76,10 @@ void terminal()
 		// if the last character typed was a newline
 		if (terminal_buffer[terminal_buffer_length - 1] == '\n')
 		{
+			
 			// replace the \n w/ a null terminator to turn the buffered characters into a "string"
 			terminal_buffer[terminal_buffer_length - 1] = '\0';
+			
 			// get the first token off the buffer
 			int token_size;
 			char token[MAX_TERMINAL_BUFFER_SIZE];
@@ -118,7 +120,7 @@ void terminal()
 				vga_buffer_put_str("\r");
 			}
 			
-			else if (strcmp((string) token, "read_fault") == 0)
+			else if (strcmp((string) token, "readFault") == 0)
 			{
 				u32int *ptr = (u32int *) 0xA0000000;
 				u32int do_fault = *ptr;
@@ -127,7 +129,7 @@ void terminal()
 				vga_buffer_put_str("\n");
 				vga_buffer_put_str("Done with read fault test.\n"); // never called
 			}
-			else if (strcmp((string) token, "write_fault") == 0)
+			else if (strcmp((string) token, "writeFault") == 0)
 			{
 				u32int *ptr = (u32int *) 0xA0000000;
 				*ptr = 0xBADC0DE;
@@ -135,13 +137,6 @@ void terminal()
 				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
 			}
-			
-			/*
-			else if (strcmp((string) token, "paging_info") == 0)
-			{
-				paging_print_info();
-			}
-			*/
 			
 			// else if () {}
 			// else if () {}
