@@ -4,10 +4,10 @@
 extern u32int start;
 extern u32int end;
 
-__attribute__((unused)) static u32int kernel_start = (u32int) &start;
-static u32int kernel_end = (u32int) &end;
+__attribute__((unused)) u32int kernel_start = (u32int) &start;
+u32int kernel_end = (u32int) &end;
 
-static u32int *page_directory;
+u32int *page_directory;
 static u32int *page_table;
 
 static u8int *bitmap;
@@ -245,7 +245,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 			{
 				if (page_table_ptr[j] & 0x1)
 				{
-					set_frame(page_table_ptr[j] & ~(0x3FF));
+					set_frame(page_table_ptr[j] & ~(0xFFF));
 				}
 			}
 		}
@@ -253,6 +253,11 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
+	
+	// get the virtual memory manager going
+	// this address should get the VMM bitmap located right below
+	// the address range used for the physical frames bitmap.
+	vmm_initialize(0xFFA00000);
 	
 }
 
@@ -301,6 +306,7 @@ u32int first_free()
 
 void page_fault_interrupt_handler(registers regs)
 {
+	
 	u32int present = regs.err_code & 0x1;
 	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2; // not used now, but may be used later.
 	u32int us = regs.err_code & 0x4;
@@ -334,6 +340,7 @@ void page_fault_interrupt_handler(registers regs)
 			
 			if (new_table_phys_addr == 0xFFFFFFFF)
 			{
+				// this is where i will take care of things like swapping.
 				put_str("\nOut of physical memory.");
 				put_str("\nHalting.");
 				for (;;) {}
@@ -399,6 +406,7 @@ void page_fault_interrupt_handler(registers regs)
 		
 		if (new_page_phys_addr == 0xFFFFFFFF)
 		{
+			// this is where i'll need to take care of things like swapping.
 			put_str("\nOut of physical memory.");
 			put_str("\nHalting.");
 			for (;;) {}

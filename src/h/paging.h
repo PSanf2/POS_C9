@@ -15,7 +15,7 @@ extern void write_cr3(u32int);
 extern u32int read_cr4();
 extern void write_cr4(u32int);
 
-// paging initialization function
+// memory manager initialization function
 void paging_initialize(struct multiboot *mboot_ptr);
 
 // stuff needed for the bitmap.

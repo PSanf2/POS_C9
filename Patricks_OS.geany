@@ -22,7 +22,7 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=2
+current_page=9
 FILE_NAME_0=0;Conf;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fgrub.cfg;0;4
 FILE_NAME_1=328;None;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Flinker.ld;0;4
 FILE_NAME_2=1569;Make;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fmakefile;0;4
@@ -57,8 +57,6 @@ FILE_NAME_30=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempt
 FILE_NAME_31=1156;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fsystem.h;0;4
 FILE_NAME_32=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Ftimer.h;0;4
 FILE_NAME_33=0;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fvga.h;0;4
-FILE_NAME_34=173;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fc%2Fbitmap.c;0;4
-FILE_NAME_35=120;C;0;16;1;1;0;%2Fmedia%2Fsf_Operating_System_Stuff%2FPOS%20Attempts%2FPOS_C9%2Fsrc%2Fh%2Fbitmap.h;0;4
 
 [VTE]
 last_dir=/media/sf_Operating_System_Stuff/POS Attempts/POS_C9

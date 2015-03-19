@@ -5,10 +5,6 @@
  * The string is an array of chars, with '\0' in the last element.
  * A string data type is defined in the string.h file
  */
- 
-// this is used to compare two strings
-// i don't think this works right. it seems to return 0 when it shouldn't.
-// it's not killing anything now, but it will eventually cause major issues.
 s32int strcmp(const string str1, const string str2)
 {
 	s32int val = 0;
