@@ -1,5 +1,30 @@
 #include <paging.h>
 
+/*
+ * This needs to be rewritten again.
+ * They way I'm using virtual addresses for the page directory pointer
+ * won't allow me to move into task switching w/o a lot of messy hacks.
+ * I need to declare some structs for the page directory, and page table
+ * that will allow me to hold more information so when I do task switching
+ * I won't end up clobbering crap. I also need to start thinking of the
+ * kernel as a process that the system is running, that will have its
+ * own virtual address space. I also need to start thinking about how
+ * I'll be cloning and linking paging structures to allow the kernel
+ * memory to remain mapped into everything when a task switch occurs.
+ * What I have here would work fine for a monotasking system, but can't
+ * be easily converted into a multitasking system.
+ * 
+ * The stuff for the bitmap is correct enough.
+ * The recursive mapping is alright.
+ * I mainly need to think about what information needs to be unique
+ * for each process that the system may be running.
+ * 
+ * The way that Malloy set up a current directory, and a kernel directory
+ * pointer is probably the right way to go for most of it.
+ */
+
+
+
 // external variables defined in the linker that are needed to know where the kernel resides
 extern u32int start;
 extern u32int end;
@@ -8,14 +33,14 @@ __attribute__((unused)) u32int kernel_start = (u32int) &start;
 u32int kernel_end = (u32int) &end;
 
 u32int *page_directory;
-static u32int *page_table;
+//static u32int *page_table;
 
 static u8int *bitmap;
 static u32int max_index;
 
 void paging_initialize(struct multiboot *mboot_ptr)
 {
-	
+	u32int *page_table;
 	// gather information.
 	u32int mem_in_mb = mboot_ptr->mem_upper / 1024 + 2;
 	u32int mem_in_kb = mem_in_mb * 1024;
@@ -333,7 +358,33 @@ void page_fault_interrupt_handler(registers regs)
 		if ((page_directory[page_dir_index] & 0x1) == 0)
 		{
 			
-			u32int PT10_temp = page_table[10];
+			/*
+			put_str("\nSearching...");
+			for (u32int i = 0xFFC00000; i <= 0xFFFFFFFF; i++)
+			{
+				u32int *ptr = (u32int *) i;
+				if (*ptr == 0xA003)
+				{
+					put_str("\n\tFound at ");
+					put_hex(i);
+					put_str("\nptr = ");
+					put_hex((u32int) ptr);
+					put_str("\n*ptr = ");
+					put_hex(*ptr);
+					break;
+				}
+			}
+			*/
+			
+			// this is being done to make the code independent of the
+			// page_table pointer that used to exist at the top of the file.
+			u32int *PT10_temp_ptr = (u32int *) 0xFFF00028;
+			
+			//u32int PT10_temp = page_table[10];
+			u32int PT10_temp = *PT10_temp_ptr;
+			
+			//put_str("\npage_table[10] => ");
+			//put_hex(page_table[10]);
 			
 			// get a physical address for the new page
 			u32int new_table_phys_addr = first_free();
@@ -350,7 +401,7 @@ void page_fault_interrupt_handler(registers regs)
 			set_frame(new_table_phys_addr);
 			
 			// map the new page to 0xA000
-			page_table[10] = new_table_phys_addr | 3;
+			*PT10_temp_ptr = new_table_phys_addr | 3;
 			
 			// create a pointer to the new page
 			u32int new_page_table_addr = 0xC000A000;
@@ -370,7 +421,7 @@ void page_fault_interrupt_handler(registers regs)
 			page_directory[page_dir_index] = (u32int) new_table_phys_addr | 3; // supervisor, read/write, present.
 			
 			// restore the value of the old mapping
-			page_table[10] = PT10_temp;
+			*PT10_temp_ptr = PT10_temp;
 			
 		}
 		
@@ -392,10 +443,11 @@ void page_fault_interrupt_handler(registers regs)
 		u32int table_attribs = page_directory[page_dir_index] & 0xFFF;
 		
 		// create a temp var to hold the original mapping of the virtual address i'll be using
-		u32int PT10_temp = page_table[10];
+		u32int *PT10_temp_ptr = (u32int *) 0xFFF00028;
+		u32int PT10_temp = *PT10_temp_ptr;
 		
 		// map the page table to 0xA000
-		page_table[10] = table_phys_addr | table_attribs;
+		*PT10_temp_ptr = table_phys_addr | table_attribs;
 		
 		// create a pointer to the page table so i can alter it
 		u32int *table;
@@ -418,7 +470,7 @@ void page_fault_interrupt_handler(registers regs)
 		table[page_table_index] = new_page_phys_addr | table_attribs;
 		
 		// restore the original mapping for 0xA000
-		page_table[10] = PT10_temp;
+		*PT10_temp_ptr = PT10_temp;
 		
 		write_cr3(read_cr3()); // dunno why. yuri has this, and it seems to be needed.
 		// it's needed because of the way i'm doing temp mappings in order to create new page tables.
