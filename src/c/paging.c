@@ -16,15 +16,6 @@ static u32int max_index;
 void paging_initialize(struct multiboot *mboot_ptr)
 {
 	
-	// don't bother to juggle the page directory around to save the 4KB
-	// of space the boot script used setting up the 4MB pages. It's just
-	// not really worth it. This will also allow me to dynamically
-	// allocate space for the page directory w/ another function to make
-	// this code position independent.
-	
-	// create the kernel page directory
-	// create the kernel page tables (not just one, all that are needed)
-	
 	// set up the system to use 4KB pages
 	
 	// i'm going to set up the page directory at the first page aligned
@@ -40,28 +31,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	u32int kernel_page_table_virt_addr = kernel_page_dir_virt_addr + 0x1000;
 	u32int kernel_page_table_phys_addr = kernel_page_table_virt_addr - 0xC0000000;
-	
-	
-	// print out what i have for debugging
-	put_str("\nkernel_start: ");
-	put_hex(kernel_start);
-	put_str("\nkernel_end: ");
-	put_hex(kernel_end);
-	put_str("\nmem_in_mb: ");
-	put_dec(mem_in_mb);
-	put_str("\nmem_in_kb: ");
-	put_dec(mem_in_kb);
-	put_str("\nnum_frames: ");
-	put_dec(num_frames);
-	put_str("\nkernel_page_dir_virt_addr: ");
-	put_hex(kernel_page_dir_virt_addr);
-	put_str("\nkernel_page_dir_phys_addr: ");
-	put_hex(kernel_page_dir_phys_addr);
-	put_str("\nkernel_page_table_virt_addr: ");
-	put_hex(kernel_page_table_virt_addr);
-	put_str("\nkernel_page_table_phys_addr: ");
-	put_hex(kernel_page_table_phys_addr);
-	
 	
 	// make a pointer to the place i'll be creating the page directory
 	u32int *page_dir_ptr = (u32int *) kernel_page_dir_virt_addr;
@@ -114,28 +83,8 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	kernel_page_directory.virt_addr = (u32int *) kernel_page_dir_virt_addr;
 	kernel_page_directory.phys_addr = kernel_page_dir_phys_addr;
 	
-	/*
-	// print it
-	put_str("\n&kernel_page_directory: ");
-	put_hex((u32int) &kernel_page_directory);
-	put_str("\nkernel_page_directory.virt_addr: ");
-	put_hex((u32int) kernel_page_directory.virt_addr);
-	put_str("\nkernel_page_directory.phys_addr: ");
-	put_hex(kernel_page_directory.phys_addr);
-	*/
-	
 	// set up the pointer for the current page directory
 	current_page_directory = (page_directory_type *) &kernel_page_directory;
-	
-	/*
-	// print it
-	put_str("\ncurrent_page_directory: ");
-	put_hex((u32int) current_page_directory);
-	put_str("\ncurrent_page_directory->virt_addr: ");
-	put_hex((u32int) current_page_directory->virt_addr);
-	put_str("\ncurrent_page_directory->phys_addr: ");
-	put_hex(current_page_directory->phys_addr);
-	*/
 	
 	// figure out the new cr4 value i'll need
 	u32int new_cr4_val = read_cr4() & ~(0x00000010);
@@ -163,25 +112,9 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	u32int bitmap_page_table_virt_addr = kernel_page_table_virt_addr + 0x1000;
 	u32int bitmap_page_table_phys_addr = bitmap_page_table_virt_addr - 0xC0000000;
 	
-	/*
-	// print it
-	put_str("\nbitmap_page_table_virt_addr: ");
-	put_hex(bitmap_page_table_virt_addr);
-	put_str("\nbitmap_page_table_phys_addr: ");
-	put_hex(bitmap_page_table_phys_addr);
-	*/
-	
 	// figure out the virtual and physical address i'll use for the bitmap
 	u32int bitmap_virt_addr = 0xFFB00000;
 	u32int bitmap_phys_addr = bitmap_page_table_phys_addr + 0x1000;
-	
-	/*
-	// print it
-	put_str("\nbitmap_virt_addr: ");
-	put_hex(bitmap_virt_addr);
-	put_str("\nbitmap_phys_addr: ");
-	put_hex(bitmap_phys_addr);
-	*/
 	
 	// figure out the number of frames i'll need for the bitmap
 	u32int bytes_needed_for_bitmap = num_frames / 8;
@@ -192,31 +125,17 @@ void paging_initialize(struct multiboot *mboot_ptr)
 		frames_needed_for_bitmap++;
 	}
 	
-	/*
-	//print it
-	put_str("\nbytes_needed_for_bitmap: ");
-	put_dec(bytes_needed_for_bitmap);
-	put_str("\nframes_needed_for_bitmap: ");
-	put_dec(frames_needed_for_bitmap);
-	*/
-	
 	// create a page table for the bitmap.
 	// figure out the index on the page table to use
 	u32int table_index = (bitmap_page_table_virt_addr >> 12) & 0x3FF;
 	
-	/*
-	// print it
-	put_str("\ntable_index: ");
-	put_dec(table_index);
-	*/
-	
-	// set it as present on the page table
+	// set it as present on the kernel page table
 	page_table_ptr[table_index] = bitmap_page_table_phys_addr | 3;
 	
 	// invalidate the buffer for it
 	invlpg(bitmap_page_table_virt_addr);
 	
-	// make a pointer to the page table
+	// make a pointer to the bitmap page table
 	page_table_ptr = (u32int *) bitmap_page_table_virt_addr;
 	
 	// clear out the memory in there
@@ -246,12 +165,6 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	
 	// figure out the max index on that array.
 	max_index = (num_frames / 64) - 1;
-	
-	/*
-	// print it
-	put_str("\nmax_index: ");
-	put_dec(max_index);
-	*/
 	
 	for (u32int i = 0; i < num_frames; i++)
 	{
@@ -285,23 +198,144 @@ void paging_initialize(struct multiboot *mboot_ptr)
 					set_frame(page_table_ptr[j] & ~(0xFFF));
 				}
 			}
-			
 		}
 	}
 	
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
-	
-	put_str("\n");
 }
 
 void page_fault_interrupt_handler(__attribute__((unused)) registers regs)
 {
-	put_str("\nPage fault interrupted called.");
-	put_str("\nFaulting virtual address: ");
-	put_hex(read_cr2());
-	put_str("\nHalting.");
-	for (;;) {}
+	
+	u32int present = regs.err_code & 0x1;
+	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2; // will be used later
+	u32int us = regs.err_code & 0x4;
+	
+	if (!present)
+	{
+		// gather information
+		u32int faulting_virt_addr = read_cr2();
+		u32int page_dir_index = faulting_virt_addr >> 22;
+		u32int page_table_index = (faulting_virt_addr >> 12) & 0x3FF;
+		__attribute__ ((unused)) u32int page_offset = faulting_virt_addr & 0xFFF;
+		
+		// i should already have a pointer to the page directory
+		// i want to rename it to make it easier to handle
+		u32int *page_directory = current_page_directory->virt_addr;
+		
+		if ((page_directory[page_dir_index] & 0x1) == 0)
+		{
+			
+			// create a pointer to the kernel's page table
+			u32int *kernel_page_table = (u32int *) 0xFFF00000;
+			
+			// store the value on PT10 for later
+			u32int PT10_tmp = kernel_page_table[10];
+			
+			// get a physical address for the new page table
+			u32int new_table_phys_addr = first_free();
+			
+			// make sure i'm not out of memory
+			if (new_table_phys_addr == 0xFFFFFFFF)
+			{
+				put_str("\nOut of physical memory.");
+				put_str("\nHalting.");
+				for (;;) {}
+			}
+			
+			// mark the frame as being used
+			set_frame(new_table_phys_addr);
+			
+			// map the new page to 0xC000A000
+			kernel_page_table[10] = new_table_phys_addr | 3;
+			
+			// create a pointer to the new page so i can alter it
+			u32int *new_page_table = (u32int *) 0xC000A000;
+			
+			// clear it
+			memset((u8int *) new_page_table, 0, 4096);
+			
+			// create a page table in there
+			for (u32int i = 0; i < 1024; i++)
+			{
+				new_page_table[i] = 0 | 2;
+			}
+			
+			// put the physical address of the new page table on the page directory at the proper index, and set the attributes
+			page_directory[page_dir_index] = (u32int) new_table_phys_addr | 3;
+			
+			// restore the value of the old mapping
+			kernel_page_table[10] = PT10_tmp;
+		}
+		
+		// get the physical address for the page table
+		u32int table_phys_addr = page_directory[page_dir_index] & ~(0xFFF);
+		
+		// get the attributes for that page table
+		u32int table_attribs = page_directory[page_dir_index] & 0xFFF;
+		
+		// create a pointer to the kernel's page table
+		u32int *kernel_page_table = (u32int *) 0xFFF00000;
+		
+		// store the value on PT10 for later
+		u32int PT10_tmp = kernel_page_table[10];
+		
+		// map the page table to 0xC000A000
+		kernel_page_table[10] = table_phys_addr | table_attribs;
+		
+		// create a pointer to the page table so i can alter it
+		u32int *table = (u32int *) 0xC000A000;
+		
+		// get a physical address for the new page
+		u32int new_page_phys_addr = first_free();
+		
+		// make sure i'm not out of memory
+		if (new_page_phys_addr == 0xFFFFFFFF)
+		{
+			put_str("\nOut of physical memory.");
+			put_str("\nHalting.");
+			for (;;) {}
+		}
+		
+		// mark the frame as being used
+		set_frame(new_page_phys_addr);
+		
+		// put the address on the page table w/ the proper attribues
+		table[page_table_index] = new_page_phys_addr | table_attribs;
+		
+		// restore the value of the old mapping
+		kernel_page_table[10] = PT10_tmp;
+		
+		// refresh the cr3 value
+		write_cr3(read_cr3());
+		
+		// tell the TLB that the page table entry has been updated.
+		invlpg((faulting_virt_addr & ~(0xFFF)));
+		
+		return;
+		
+	}
+	else if (us)
+	{
+		u32int cr2_val = read_cr2();
+		put_str("\nProtection fault. Memory at ");
+		put_hex(cr2_val);
+		put_str(" is reserved for supervisor.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	}
+	else
+	{
+		put_str("\nUnknown page fault exception has occured.");
+		put_str("\nError code: ");
+		put_hex(regs.err_code);
+		put_str("\nHalting system.");
+		for (;;) {}
+	}
+	
 }
 
 void invlpg(u32int addr)

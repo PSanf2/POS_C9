@@ -73,7 +73,8 @@ void keyboard_interrupt_handler(__attribute__ ((unused)) registers regs)
 		if (scancode == KRLEFT_SHIFT || scancode == KRRIGHT_SHIFT)
 		{
 			shiftKeyDown = 1;
-			keyboard_buffer_length--; // if i don't do this then the buffer will fill up instantly, and cause the counter to incorrectly reset to 0.
+			return;	// this is better
+			//keyboard_buffer_length--; // if i don't do this then the buffer will fill up instantly, and cause the counter to incorrectly reset to 0.
 		}
 		if (shiftKeyDown)
 		{
