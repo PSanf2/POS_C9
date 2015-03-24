@@ -36,6 +36,16 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	vga_set_handler(kernel_vga_handler);
 	
+	
+	
+	
+	
+	
+	// everything below here is stuff i do to get set up for the terminal
+	// when i get in to multitasking i'll need to set up a process for
+	// the kernel, set up a process for a shell, and get both of them
+	// running.
+	
 	memset((u8int *) terminal_buffer, 0, MAX_TERMINAL_BUFFER_SIZE); // clear the terminal buffer (initalize it to 0 when we start running)
 	
 	set_text_color(LIGHT_GREY, BLUE);
@@ -109,9 +119,6 @@ void terminal()
 				vga_buffer_put_dec(get_tick());
 				vga_buffer_put_str("\n");
 			}
-			// there's an issue w/ how i'm doing this.
-			// if i don't include the new line statement then the terminal character ends up pushed over about
-			// two tabs worth of space. if i leave the new line, then the terminal cursor is one line to low, and not at the top of the screen.
 			else if (strcmp((string) token, "clear") == 0)
 			{
 				clear_screen();

@@ -205,7 +205,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
 }
 
-void page_fault_interrupt_handler(__attribute__((unused)) registers regs)
+void page_fault_interrupt_handler(registers regs)
 {
 	
 	u32int present = regs.err_code & 0x1;
