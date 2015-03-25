@@ -234,18 +234,7 @@ void page_fault_interrupt_handler(registers regs)
 			u32int PT10_tmp = kernel_page_table[10];
 			
 			// get a physical address for the new page table
-			u32int new_table_phys_addr = first_free();
-			
-			// make sure i'm not out of memory
-			if (new_table_phys_addr == 0xFFFFFFFF)
-			{
-				put_str("\nOut of physical memory.");
-				put_str("\nHalting.");
-				for (;;) {}
-			}
-			
-			// mark the frame as being used
-			set_frame(new_table_phys_addr);
+			u32int new_table_phys_addr = alloc_frame();
 			
 			// map the new page to 0xC000A000
 			kernel_page_table[10] = new_table_phys_addr | 3;
@@ -288,18 +277,7 @@ void page_fault_interrupt_handler(registers regs)
 		u32int *table = (u32int *) 0xC000A000;
 		
 		// get a physical address for the new page
-		u32int new_page_phys_addr = first_free();
-		
-		// make sure i'm not out of memory
-		if (new_page_phys_addr == 0xFFFFFFFF)
-		{
-			put_str("\nOut of physical memory.");
-			put_str("\nHalting.");
-			for (;;) {}
-		}
-		
-		// mark the frame as being used
-		set_frame(new_page_phys_addr);
+		u32int new_page_phys_addr = alloc_frame();
 		
 		// put the address on the page table w/ the proper attribues
 		table[page_table_index] = new_page_phys_addr | table_attribs;
@@ -385,3 +363,105 @@ u32int first_free()
 	}
 	return 0xFFFFFFFF;
 }
+
+u32int alloc_frame()
+{
+	u32int phys_addr = first_free();
+	
+	if (phys_addr == 0xFFFFFFFF)
+	{
+		put_str("\nOut of physical memory.");
+		put_str("\nHalting.");
+		for (;;) {}
+	}
+	
+	set_frame(phys_addr);
+	
+	return phys_addr;
+}
+
+void switch_page_directory(__attribute__((unused)) page_directory_type *page_dir_ptr)
+{
+	
+}
+
+/*
+void clone_page_directory(__attribute__((unused)) page_directory_type *src, __attribute__((unused)) page_directory_type *dest)
+{
+	
+}
+
+void clone_page_table(__attribute__((unused)) page_table_type *src, __attribute__((unused)) page_table_type *dest)
+{
+	
+}
+*/
+
+void map_page(u32int virt_addr, u32int phys_addr)
+{
+	
+	// figure out the page directory index for the virtual address
+	u32int page_dir_index = virt_addr >> 22;
+	
+	// figure out the page table index for the virtual address
+	u32int page_table_index = (virt_addr >> 12) & 0x3FF;
+	
+	// figure out the recursive virtual address for the page table
+	u32int virt_addr_base = 0xFFC00000;
+	u32int virt_addr_offset = page_dir_index << 12;
+	u32int page_table_virt_addr = virt_addr_base + virt_addr_offset;
+	
+	// make a pointer to the page table
+	u32int *page_table = (u32int *) page_table_virt_addr;
+	
+	// if the frame for the physical address is allocated
+	if (test_frame(phys_addr))
+	{
+		// then just map it
+		// map the physical address to the virtual address by updating the entry on the page table
+		page_table[page_table_index] = (phys_addr & ~(0xFFF)) | 3;
+	}
+	else
+	{
+		// allocate the frame for the physical address
+		alloc_frame(phys_addr);
+		
+		// and map it
+		// (mapping the address by writing to the page table should poke
+		// the nonexisteant page table, causing a page fault, which
+		// causes the page table to be created)
+		page_table[page_table_index] = (phys_addr & ~(0xFFF)) | 3;
+	}
+	
+	// tell the TLB that the page table entry has been updated.
+	invlpg((virt_addr & ~(0xFFF)));
+}
+
+void unmap_page(u32int virt_addr)
+{
+	
+	// figure out the page directory index for the virtual address
+	u32int page_dir_index = virt_addr >> 22;
+	
+	// figure out the page table index for the virtual address
+	u32int page_table_index = (virt_addr >> 12) & 0x3FF;
+	
+	// figure out the recursive virtual address for the page table
+	u32int virt_addr_base = 0xFFC00000;
+	u32int virt_addr_offset = page_dir_index << 12;
+	u32int page_table_virt_addr = virt_addr_base + virt_addr_offset;
+	
+	// make a pointer to the page table
+	u32int *page_table = (u32int *) page_table_virt_addr;
+	
+	// unmap the page
+	page_table[page_table_index] = 0 | 2;
+	
+	// tell the TLB that the page table entry has been updated.
+	invlpg((virt_addr & ~(0xFFF)));
+	
+}
+
+
+
+

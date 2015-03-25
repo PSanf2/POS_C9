@@ -12,11 +12,15 @@
 
 // KISS = Keep it simple, stupid!
 
+/*
+// i thought i would need this, but it's looking like i don't.
+// it's not getting used for anything.
 typedef struct page_table_struct
 {
 	u32int *virt_addr;
 	u32int phys_addr;
 } page_table_type;
+*/
 
 typedef struct page_directory_struct
 {
@@ -49,23 +53,24 @@ void clear_frame(u32int frame_addr);
 u32int test_frame(u32int frame_addr);
 u32int first_free();
 
-
-
-
-
-
-
 // use to allocate a frame of physical memory, and return the physical address
 u32int alloc_frame();
+
+
+
+
+
+
+
 
 // will be use to switch the page directory so i can use another address space
 void switch_page_directory(page_directory_type *page_dir_ptr);
 
 // will be used to clone a page directory
-void clone_page_directory(page_directory_type *src, page_directory_type *dest);
+//void clone_page_directory(page_directory_type *src, page_directory_type *dest);
 
 // will be used to clone a page table
-void clone_page_table(page_table_type *src, page_table_type *dest);
+//void clone_page_table(page_table_type *src, page_table_type *dest);
 
 // will be used to map a physical address to a virtual address
 void map_page(u32int virt_addr, u32int phys_addr);

@@ -142,6 +142,48 @@ void terminal()
 				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
 				vga_buffer_put_str("\nDone with write fault test.\n");
 			}
+			else if (strcmp((string) token, "mapTest") == 0)
+			{
+				u32int virt_addr1 = 0xA0001000;
+				u32int virt_addr2 = 0xA000F000;
+				u32int phys_addr = 0x500000;
+				
+				map_page(virt_addr1, phys_addr);
+				u32int *ptr1 = (u32int *) virt_addr1;
+				*ptr1 = 0x1234;
+				put_str("\nTest for virt_addr1: *ptr1 = ");
+				put_hex(*ptr1);
+				
+				map_page(virt_addr2, phys_addr);
+				u32int *ptr2 = (u32int *) virt_addr2;
+				put_str("\nTest for virt_addr2: *ptr2 = ");
+				put_hex(*ptr2);
+				
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "unmapTest") == 0)
+			{
+				u32int virt_addr = 0xA0002000;
+				u32int phys_addr = 0x600000;
+				
+				map_page(virt_addr, phys_addr);
+				u32int *ptr1 = (u32int *) virt_addr;
+				*ptr1 = 0x1234;
+				put_str("\n*ptr1 = ");
+				put_hex(*ptr1);
+				
+				unmap_page(virt_addr);
+				u32int *ptr2 = (u32int *) virt_addr;
+				put_str("\n*ptr2 = ");
+				put_hex(*ptr2);
+				
+				map_page(virt_addr, phys_addr);
+				u32int *ptr3 = (u32int *) virt_addr;
+				put_str("\n*ptr3 = ");
+				put_hex(*ptr3);
+				
+				put_str("\n");
+			}
 			
 			// else if () {}
 			// else if () {}
