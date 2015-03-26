@@ -211,8 +211,8 @@ void paging_initialize(struct multiboot *mboot_ptr)
 void page_fault_interrupt_handler(registers regs)
 {
 	
-	//put_str("\nPage fault at virtual address ");
-	//put_hex(read_cr2());
+	put_str("\nPage fault at virtual address ");
+	put_hex(read_cr2());
 	
 	u32int present = regs.err_code & 0x1;
 	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2; // will be used later

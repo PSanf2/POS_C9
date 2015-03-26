@@ -184,6 +184,51 @@ void terminal()
 				
 				put_str("\n");
 			}
+			else if (strcmp((string) token, "printFree") == 0)
+			{
+				print_all_free();
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "printUsed") == 0)
+			{
+				print_all_used();
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "malloc") == 0)
+			{
+				
+				u32int size = str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				u32int *malloc_ptr = malloc(size);
+				
+				put_str("\nmalloc_ptr=");
+				put_hex((u32int) malloc_ptr);
+				
+				vga_buffer_put_str("\n");
+			}
+			else if (strcmp((string) token, "free") == 0)
+			{
+				u32int addr_to_free = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				u32int *free_ptr = (u32int *) addr_to_free;
+				
+				put_str("\nfree_ptr=");
+				put_hex((u32int) free_ptr);
+				
+				free(free_ptr);
+				
+				vga_buffer_put_str("\n");
+			}
+			else if (strcmp((string) token, "toHex") == 0)
+			{
+				u32int decNumber = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				put_str("\n");
+				put_str(&terminal_buffer[token_size + 1]);
+				put_str(" = ");
+				put_dec(decNumber);
+				put_str("\n");
+			}
 			
 			// else if () {}
 			// else if () {}

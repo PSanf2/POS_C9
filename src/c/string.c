@@ -62,3 +62,57 @@ u32int str_to_u32int(const string str)
 	}
 	return result;
 }
+
+u32int hex_str_to_u32int(const string str)
+{
+	u32int result = 0;
+	
+	int i = 0;
+	
+	if ((strlen(str) > 2) && (str[0] == '0') && (str[1] == 'x'))
+	{
+		i = 2;	
+	}
+	
+	for (; i < strlen(str); i++)
+	{
+		u32int digit = 0;
+		char hexit = str[i];
+		switch(hexit)
+		{
+			case 'A':
+			case 'a':
+				digit = 10;
+				break;
+			case 'B':
+			case 'b':
+				digit = 11;
+				break;
+			case 'C':
+			case 'c':
+				digit = 12;
+				break;
+			case 'D':
+			case 'd':
+				digit = 13;
+				break;
+			case 'E':
+			case 'e':
+				digit = 14;
+				break;
+			case 'F':
+			case 'f':
+				digit = 15;
+				break;
+			default:
+				digit = str[i] - '0';
+		}
+		result = result * 16 + digit;
+	}
+	return result;
+}
+
+
+
+
+

@@ -23,26 +23,37 @@ typedef struct vmm_list_struct
 // external variables declared in the paging.c file
 extern page_directory_type *current_page_directory;
 
+// a function to get the ball rolling
 void vmm_initialize();
 
-void print_node(vmm_node *node);
-
-// i need a function to allocate space from the current address space
+// functions i need to allocate memory
 u32int *malloc(u32int size);
+vmm_node *search_free(u32int size);
+u32int highest_addr(vmm_list *list);
+vmm_node *split_free(vmm_node *node, u32int size);
 
-// i need a function to free allocations from the current address space
+// functions i need to free memory
 void free(u32int *virt_addr);
+vmm_node *search_free_neighbor(vmm_node *node);
+vmm_node *search_used(u32int virt_addr);
 
-// functions needed to handle the list
-void insert_after(vmm_node *node, vmm_node *new_node);
-void insert_before(vmm_node *node, vmm_node *new_node);
-void insert_beginning(vmm_node *node);
-void insert_end(vmm_node *node);
-void remove(vmm_node *node);
-vmm_node *split(vmm_node *node, u32int bytes);
+// functions for adding and removing nodes from lists
+void insert_after(vmm_list *list, vmm_node *node, vmm_node *new_node);
+void insert_before(vmm_list *list, vmm_node *node, vmm_node *new_node);
+void insert_first(vmm_list *list, vmm_node *new_node);
+void insert_last(vmm_list *list, vmm_node *new_node);
+void remove(vmm_list *list, vmm_node *node);
+
+// functions for maintianing the free list
 vmm_node *search_adjacent_free();
-void compact_after(vmm_node *node);
-void compact_all();
+void compact_free(vmm_node *node);
+void compact_all_free();
+
+// stuff for debugging
+void print_node(vmm_node *node);
+void print_all(vmm_list *list);
+void print_all_free();
+void print_all_used();
 
 #endif
 
