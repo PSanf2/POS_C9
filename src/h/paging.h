@@ -56,21 +56,8 @@ u32int first_free();
 // use to allocate a frame of physical memory, and return the physical address
 u32int alloc_frame();
 
-
-
-
-
-
-
-
 // will be use to switch the page directory so i can use another address space
 void switch_page_directory(page_directory_type *page_dir_ptr);
-
-// will be used to clone a page directory
-//void clone_page_directory(page_directory_type *src, page_directory_type *dest);
-
-// will be used to clone a page table
-//void clone_page_table(page_table_type *src, page_table_type *dest);
 
 // will be used to map a physical address to a virtual address
 void map_page(u32int virt_addr, u32int phys_addr);

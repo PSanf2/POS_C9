@@ -10,8 +10,8 @@
 
 // don't fall in to that trap with the search function causing a page fault trying to read from a null pointer
 
-static vmm_list *used_mem = (vmm_list *) 0xFF400000; // where the used list will start
-static vmm_list *free_mem = (vmm_list *) 0xFF400000 + sizeof(vmm_list); // where the free list will start
+static vmm_list *used_mem = (vmm_list *) 0xFF000000; // where the used list will start
+static vmm_list *free_mem = (vmm_list *) 0xFF000000 + sizeof(vmm_list); // where the free list will start
 
 void vmm_initialize()
 {
@@ -34,9 +34,9 @@ void vmm_initialize()
 	// figure out the address where the first node will go.
 	
 	// for each entry on the page directory
-	// this loop only runs to less than 1022 because PD[1023] is reserved for the recursive mappings,
+	// this loop only runs to less than 1024 because PD[1023] is reserved for the recursive mappings,
 	// and PD[1022] is reserved for the free memory list, and bitmap.
-	for (u32int i = 0; i < 1021; i++)
+	for (u32int i = 0; i < 1020; i++)
 	{
 		
 		// if there's nothing on that index of the page directory

@@ -391,18 +391,6 @@ void switch_page_directory(__attribute__((unused)) page_directory_type *page_dir
 	
 }
 
-/*
-void clone_page_directory(__attribute__((unused)) page_directory_type *src, __attribute__((unused)) page_directory_type *dest)
-{
-	
-}
-
-void clone_page_table(__attribute__((unused)) page_table_type *src, __attribute__((unused)) page_table_type *dest)
-{
-	
-}
-*/
-
 void map_page(u32int virt_addr, u32int phys_addr)
 {
 	
