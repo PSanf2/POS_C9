@@ -165,7 +165,6 @@ void vmm_initialize()
 					
 					// add the node to the end of the list
 					insert_last(free_memory, new_node);
-					
 				}
 			}
 		}

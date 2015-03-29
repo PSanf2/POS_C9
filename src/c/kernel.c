@@ -201,7 +201,8 @@ void terminal()
 				
 				u32int *malloc_ptr = malloc(size);
 				
-				put_str("\nmalloc_ptr=");
+				vga_buffer_put_str("\n");
+				
 				put_hex((u32int) malloc_ptr);
 				
 				vga_buffer_put_str("\n");
@@ -210,12 +211,7 @@ void terminal()
 			{
 				u32int addr_to_free = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
 				
-				u32int *free_ptr = (u32int *) addr_to_free;
-				
-				put_str("\nfree_ptr=");
-				put_hex((u32int) free_ptr);
-				
-				free(free_ptr);
+				free((u32int *) addr_to_free);
 				
 				vga_buffer_put_str("\n");
 			}
