@@ -3,70 +3,36 @@
 
 #include <system.h>
 
-// forward declaration for type in paging.h
+// forward declarations
 typedef struct page_directory_struct page_directory_type;
-
-typedef struct vmm_node_struct
-{
-	struct vmm_node_struct *prev;
-	u32int virt_addr;
-	u32int size;
-	struct vmm_node_struct *next;
-} vmm_node;
-
-typedef struct vmm_list_struct
-{
-	struct vmm_node_struct *first;
-	struct vmm_node_struct *last;
-} vmm_list;
+typedef struct list_struct list_type;
+typedef struct list_node_struct list_node_type;
 
 // external variables declared in the paging.c file
-extern page_directory_type *current_page_directory;
+extern volatile page_directory_type *current_page_directory;
+
+typedef struct allocation_struct
+{
+	u32int virt_addr;
+	u32int size;
+} allocation_type;
 
 // a function to get the ball rolling
 void vmm_initialize();
-
-// functions i need to allocate memory
-u32int *malloc(u32int size);
-vmm_node *search_free(u32int size);
-u32int highest_addr(vmm_list *list);
-vmm_node *split_free(vmm_node *node, u32int size);
-
-// functions i need to free memory
-void free(u32int *virt_addr);
-vmm_node *search_free_neighbor(vmm_node *node);
-vmm_node *search_used(u32int virt_addr);
-
-// functions for adding and removing nodes from lists
-void insert_after(vmm_list *list, vmm_node *node, vmm_node *new_node);
-void insert_before(vmm_list *list, vmm_node *node, vmm_node *new_node);
-void insert_first(vmm_list *list, vmm_node *new_node);
-void insert_last(vmm_list *list, vmm_node *new_node);
-void remove(vmm_list *list, vmm_node *node);
-
-// functions for maintianing the free list
-vmm_node *search_adjacent_free();
-void compact_free(vmm_node *node);
+void print_allocation_node(list_node_type *node);
+void print_allocation_list(list_type *list);
+void compact_after(list_node_type *node);
+list_node_type *search_adjacent_free();
 void compact_all_free();
-
-// stuff for debugging
-void print_node(vmm_node *node);
-void print_all(vmm_list *list);
+list_node_type *get_unused_node();
+u32int highest_node_addr(list_type *list);
 void print_all_free();
 void print_all_used();
+u32int *malloc(u32int size);
+list_node_type *search_free(u32int size);
+list_node_type *split_free(list_node_type *node, u32int size);
+void free(u32int *virt_addr);
+list_node_type *search_free_neighbor(list_node_type *node);
+list_node_type *search_used(u32int virt_addr);
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-

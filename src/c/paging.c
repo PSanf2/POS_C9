@@ -8,7 +8,7 @@ u32int kernel_start = (u32int) &start;
 u32int kernel_end = (u32int) &end;
 
 page_directory_type kernel_page_directory;
-page_directory_type *current_page_directory;
+volatile page_directory_type *current_page_directory;
 
 static u8int *frames;
 static u32int max_index;

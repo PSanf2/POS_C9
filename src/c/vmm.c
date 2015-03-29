@@ -10,74 +10,113 @@
 
 // don't fall in to that trap with the search function causing a page fault trying to read from a null pointer
 
-static vmm_list *used_mem = (vmm_list *) 0xFF000000; // where the used list will start
-static vmm_list *free_mem = (vmm_list *) 0xFF000000 + sizeof(vmm_list); // where the free list will start
+// whenever i compact two free mem nodes it's resulting in a pointer being lost. this is causing a memory leak.
+// when i compact free mem nodes the node that's removed from the free mem list should be put on a "free nodes" list so it can be recycled.
+// when ever i split a node i should look on the "free nodes" list to see if there is a free node available before creating a new one
+// i should never need to worry about finding the address to use for the free nodes list becuase they've already been placed.
+// i'm just making sure i keep them around so i don't loose them, and create a memeory leak
+
+static list_type *unused_nodes;
+static list_type *used_memory;
+static list_type *free_memory;
 
 void vmm_initialize()
 {
-	// these regions are off limits for allocations
-	// PD[1021] = mappings for the lists
-	// PD[1022] = mappings for the bitmap
-	// PD[1023] = mappings for the page tables
+	put_str("\nVMM Initialize");
 	
-	put_str("\nVirtual memory manager initialized.");
+	unused_nodes = (list_type *) 0xFF800000;
+	used_memory = (list_type *) ((u32int) unused_nodes + sizeof(list_type));
+	free_memory = (list_type *) ((u32int) used_memory + sizeof(list_type));
 	
-	used_mem->first = NULL;
-	used_mem->last = NULL;
+	// print it out
+	put_str("\nsizeof(list_type)=");
+	put_hex(sizeof(list_type));
 	
-	free_mem->first = NULL;
-	free_mem->last = NULL;
+	put_str("\nunused_nodes=");
+	put_hex((u32int) unused_nodes);
 	
-	// rename the pointer to my current page directory to make it easier to work with.
+	put_str("\nused_memory=");
+	put_hex((u32int) used_memory);
+	
+	put_str("\nfree_memory=");
+	put_hex((u32int) free_memory);
+	
+	put_str("\nsizeof(list_node_type)=");
+	put_hex(sizeof(list_node_type));
+	
+	// initialize the lists to null pointers
+	
+	unused_nodes->first = NULL;
+	unused_nodes->last = NULL;
+	
+	used_memory->first = NULL;
+	used_memory->last = NULL;
+	
+	free_memory->first = NULL;
+	free_memory->last = NULL;
+	
+	// rename the pointer to the current page directory so it's easier to work with
 	u32int *page_directory = current_page_directory->virt_addr;
 	
-	// figure out the address where the first node will go.
-	
+	/*
+	 * The for loop doesn't run all the way up to 1024 because I don't
+	 * want malloc to be able to return virtual addresses above
+	 * 0xFF40 0000 because addresses above those are reserved for kernel
+	 * stuff.
+	 * 
+	 * 0xFF40 0000 => PD[1021] = mappings for process control blocks (4MB)
+	 * 0xFF80 0000 => PD[1022], PT[0] - PT[767] = mappings for the lists used by the virtual memory manager (3MB)
+	 * 0xFFB0 0000 => PD[1022], PT[768] = mappings for the bitmap for the physical memory manager. (1MB)
+	 * 0xFFC0 0000 => PD[1023] = recursive mappings for page tables (4MB)
+	 */
+	 
 	// for each entry on the page directory
-	// this loop only runs to less than 1024 because PD[1023] is reserved for the recursive mappings,
-	// and PD[1022] is reserved for the free memory list, and bitmap.
-	for (u32int i = 0; i < 1020; i++)
+	for (u32int i = 0; i < 1021; i++)
 	{
-		
 		// if there's nothing on that index of the page directory
 		if ((page_directory[i] & 0x1) == 0)
 		{
-			
-			// figure out the address of the node
+			// figure out the virtual address where that 4MB of memory begins
 			u32int free_addr = i * 0x400000;
+			
 			// figure out the size of the node to add to the list
 			u32int free_size = 0x400000;
 			
-			// figure out the virtual address where the new node will live
+			// figure out the virtual address where the list node will live
 			u32int new_node_addr;
-			if (free_mem->last == NULL)
+			if (free_memory->last == NULL)
 			{
-				new_node_addr = (u32int) free_mem + sizeof(vmm_list);
+				new_node_addr = (u32int) free_memory + sizeof(list_type);
 			}
 			else
 			{
-				new_node_addr = (u32int) free_mem->last + sizeof(vmm_node);
+				new_node_addr = (u32int) free_memory->last + sizeof(list_type) + sizeof(list_node_type);
 			}
 			
-			// make a pointer to the place where the new node will live
-			vmm_node *new_node = (vmm_node *) new_node_addr;
+			// figure out the virtual address where the node data will live
+			u32int new_data_addr = new_node_addr + sizeof(list_node_type);
+			
+			// make a pointer to the place where the node will live
+			list_node_type *new_node = (list_node_type *) new_node_addr;
+			
+			// make a pointer to the place where the node data will live
+			allocation_type *new_data = (allocation_type *) new_data_addr;
 			
 			// populate the important values on the node
-			new_node->virt_addr = free_addr;
-			new_node->size = free_size;
+			new_node->data = new_data;
 			
-			// add the node to the end of the list
-			insert_last(free_mem, new_node);
+			// populate the important values on the node data
+			new_data->virt_addr = free_addr;
+			new_data->size = free_size;
 			
-			// compact the list
-			compact_all_free();
+			// add that node to the end of the list
+			insert_last(free_memory, new_node);
 			
 		}
+		// else there's a value for that page directory entry, so i need to go over the page table i've found
 		else
 		{
-			// there's an value for that page directory entry, so i need to go over the page table i found.
-			
-			// figure out the recursive address for the page table
+			// figure out the virtual address for that page table
 			u32int virt_addr_base = 0xFFC00000;
 			u32int virt_addr_offset = i << 12;
 			u32int page_table_virt_addr = virt_addr_base + virt_addr_offset;
@@ -88,80 +127,126 @@ void vmm_initialize()
 			// for each entry on the page table
 			for (u32int j = 0; j < 1024; j++)
 			{
-				
 				// if there's nothing on the page table at that index
 				if ((page_table[j] & 0x1) == 0)
 				{
-					// figure out the address of the node
+					// figure out the virtual address where that 4KB of memory begins
 					u32int free_addr = ((i * 0x400000) + (j * 0x1000));
+					
 					// figure out the size of the node to add to the list
 					u32int free_size = 0x1000;
 					
-					// figure out the virtual address where the new node will live
+					// figure out the virtual address where the node will live
 					u32int new_node_addr;
-					if (free_mem->last == NULL)
+					if (free_memory->last == NULL)
 					{
-						new_node_addr = (u32int) free_mem + sizeof(vmm_list);
+						new_node_addr = (u32int) free_memory + sizeof(list_type);
 					}
 					else
 					{
-						new_node_addr = (u32int) free_mem->last + sizeof(vmm_node);
+						new_node_addr = (u32int) free_memory->last + sizeof(list_type) + sizeof(list_node_type);
 					}
 					
-					// make a pointer to the place where the new node will live
-					vmm_node *new_node = (vmm_node *) new_node_addr;
+					// figure out the virtual address where the node data will live
+					u32int new_data_addr = new_node_addr + sizeof(list_node_type);
+					
+					// make a pointer to the place where the node will live
+					list_node_type *new_node = (list_node_type *) new_node_addr;
+					
+					// make a pointer to the place where the node data will live
+					allocation_type *new_data = (allocation_type *) new_data_addr;
 					
 					// populate the important values on the node
-					new_node->virt_addr = free_addr;
-					new_node->size = free_size;
+					new_node->data = new_data;
+					
+					// populate the important values on the node data
+					new_data->virt_addr = free_addr;
+					new_data->size = free_size;
 					
 					// add the node to the end of the list
-					insert_last(free_mem, new_node);
-					
-					// compact the list
-					compact_all_free();
+					insert_last(free_memory, new_node);
 					
 				}
 			}
 		}
 	}
 	
-	put_str("\nVMM initialization done.\n");
+	// i need to compact all of the free nodes
+	compact_all_free();
+	
+	put_str("\nVMM Initialize Done.\n");
 }
 
-u32int *malloc(u32int size)
+void print_allocation_node(list_node_type *node)
 {
-	// find a node i want to split
-	vmm_node *malloc_node = search_free(size);
+	print_node(node);
 	
-	// split it, and get the address for the new node
-	vmm_node *split_node = split_free(malloc_node, size);
+	allocation_type *node_data = (allocation_type *) node->data;
 	
-	// remove it from the free list
-	remove(free_mem, split_node);
+	put_str("\n\tnode_data=");
+	put_hex((u32int) node_data);
 	
-	// put it on the used list
-	insert_last(used_mem, split_node);
+	put_str(" virt_addr=");
+	put_hex(node_data->virt_addr);
 	
-	// create a pointer to the new allocation
-	u32int *malloc_ptr = (u32int *) split_node->virt_addr;
-	
-	// return the pointer
-	return malloc_ptr;
+	put_str(" size=");
+	put_hex(node_data->size);
 }
 
-vmm_node *search_free(u32int size)
+void print_allocation_list(list_type *list)
 {
-	// searches for a free node that's >= size
-	vmm_node *result = NULL;
-	vmm_node *candidate = free_mem->first;
+	put_str("\nlist=");
+	put_hex((u32int) list);
+	
+	put_str(" first=");
+	put_hex((u32int) list->first);
+	
+	put_str(" last=");
+	put_hex((u32int) list->last);
+	
+	list_node_type *current = list->first;
+	do
+	{
+		print_allocation_node(current);
+		current = current->next;
+	} while (current != NULL);
+}
+
+void compact_after(list_node_type *node)
+{
+	// compacts a node with the one after it
+	allocation_type *node_data = (allocation_type *) node->data;
+	
+	list_node_type *next_node = node->next;
+	allocation_type *next_node_data = (allocation_type *) next_node->data;
+	
+	u32int new_size = node_data->size + next_node_data->size;
+	
+	node_data->size = new_size;
+	
+	remove(free_memory, next_node);
+	
+	insert_last(unused_nodes, next_node);
+	
+}
+
+list_node_type *search_adjacent_free()
+{
+	list_node_type *result = NULL;
+	list_node_type *candidate = free_memory->first;
 	
 	do
 	{
-		if (candidate->size >= size)
+		if (candidate->next != NULL)
 		{
-			result = candidate;
-			break;
+			allocation_type *candidate_data = (allocation_type *) candidate->data;
+			allocation_type *candidate_next_data = (allocation_type *) candidate->next->data;
+			
+			if ((candidate_data->virt_addr + candidate_data->size) == candidate_next_data->virt_addr)
+			{
+				result = candidate;
+				break;
+			}
 		}
 		candidate = candidate->next;
 	} while (candidate != NULL);
@@ -169,10 +254,68 @@ vmm_node *search_free(u32int size)
 	return result;
 }
 
-u32int highest_addr(vmm_list *list)
+void compact_all_free()
 {
-	// searches through a list, and finds the highest used virt addr of any node.
-	vmm_node *candidate = list->first;
+	list_node_type *node = search_adjacent_free();
+	
+	while (node != NULL)
+	{
+		compact_after(node);
+		node = search_adjacent_free();
+	}
+}
+
+list_node_type *get_unused_node()
+{
+	// this will return a node that can be recycled.
+	// it'll check the unused nodes list to see if there's something there
+	// if there's nothing then it'll search the free memory and used memory
+	// lists to determine the highest virtual address in use, create a new node
+	// and return that.
+		
+	list_node_type *result = NULL;
+	
+	// if there's a node available on the unused nodes list
+	if (unused_nodes->first != NULL)
+	{
+		// make our result the first node on the unused nodes list
+		result = unused_nodes->first;
+		
+		// remove that node from the list
+		remove(unused_nodes, unused_nodes->first);
+	}
+	else
+	{
+		// i need to figure out the highest address available on the list
+		u32int highest_virt_addr = highest_node_addr(free_memory);
+		if (highest_node_addr(used_memory) > highest_virt_addr)
+		{
+			highest_virt_addr = highest_node_addr(used_memory);
+		}
+		
+		u32int new_node_addr = highest_virt_addr + sizeof(list_type) + sizeof(list_node_type);
+		
+		u32int new_data_addr = new_node_addr + sizeof(list_node_type);
+		
+		result = (list_node_type *) new_node_addr;
+		
+		result->prev = NULL;
+		result->data = (u32int *) new_data_addr;
+		result->next = NULL;
+		
+		allocation_type *result_data = (allocation_type *) new_data_addr;
+		
+		result_data->virt_addr = NULL;
+		result_data->size = NULL;
+	}
+	
+	return result;
+}
+
+u32int highest_node_addr(list_type *list)
+{
+	// searches through a list and finds the highest used virt addr for a node
+	list_node_type *candidate = list->first;
 	u32int result = (u32int) candidate;
 	
 	do
@@ -187,254 +330,11 @@ u32int highest_addr(vmm_list *list)
 	return result;
 }
 
-vmm_node *split_free(vmm_node *node, u32int size)
-{
-	
-	// figure out the addrss for the new node on the free list
-	u32int new_node_addr = highest_addr(free_mem) + sizeof(vmm_node);
-	
-	// create a pointer to the new node
-	vmm_node *new_node = (vmm_node *) new_node_addr;
-	
-	// figure out the virtual address for the new node
-	new_node->virt_addr = node->virt_addr + size;
-	
-	// figure out the size of the new node
-	new_node->size = node->size - size;
-	
-	// adjust the size of the existing node
-	node->size = size;
-	
-	// insert the new node on the list after the existing node
-	insert_after(free_mem, node, new_node);
-	
-	// return the new node
-	return node;
-	
-}
-
-void free(u32int *virt_addr)
-{
-	// i have to find the node for the virtual address on the used memory list
-	// i have to figure out where it's supposed to go on the free memory list
-	// i have to remove it from the used memory list
-	// i have to put it on the free memory list in the proper place
-	// i have to compact the free memory list.
-	
-	// find the node on the used list that for the virtual address we're freeing.
-	vmm_node *used_node = search_used((u32int) virt_addr);
-	
-	// find the node on the free list that the used node belongs ahead of
-	vmm_node *goes_before = search_free_neighbor(used_node);
-	
-	// remove the used node from the used memory list
-	remove(used_mem, used_node);
-	
-	// put it on the free memory list
-	insert_before(free_mem, goes_before, used_node);
-	
-	// compact the list
-	compact_all_free();
-	
-}
-
-vmm_node *search_free_neighbor(vmm_node *node)
-{
-	// returns the result suitable for an insert before on result.
-	vmm_node *result = NULL;
-	vmm_node *candidate = free_mem->first;
-	
-	do
-	{
-		if (candidate->virt_addr > node->virt_addr)
-		{
-			result = candidate;
-			break;
-		}
-		candidate = candidate->next;
-	} while (candidate != NULL);
-	
-	return result;
-}
-
-vmm_node *search_used(u32int virt_addr)
-{
-	// searches the used list for a node with a specific virtual address associated with a region
-	vmm_node *result = NULL;
-	vmm_node *candidate = used_mem->first;
-	
-	do
-	{
-		if (candidate->virt_addr == virt_addr)
-		{
-			result = candidate;
-			break;
-		}
-		candidate = candidate->next;
-	} while (candidate != NULL);
-	
-	return result;
-}
-
-void insert_after(vmm_list *list, vmm_node *node, vmm_node *new_node)
-{
-	new_node->prev = node;
-	new_node->next = node->next;
-	if (node->next == NULL)
-	{
-		list->last = new_node;
-	}
-	else
-	{
-		node->next->prev = new_node;
-	}
-	node->next = new_node;
-}
-
-void insert_before(vmm_list *list, vmm_node *node, vmm_node *new_node)
-{
-	new_node->prev = node->prev;
-	new_node->next = node;
-	if (node->prev == NULL)
-	{
-		list->first = new_node;
-	}
-	else
-	{
-		node->prev->next = new_node;
-	}
-	node->prev = new_node;
-}
-
-void insert_first(vmm_list *list, vmm_node *new_node)
-{
-	if (list->first == NULL)
-	{
-		list->first = new_node;
-		list->last = new_node;
-		new_node->prev = NULL;
-		new_node->next = NULL;
-	}
-	else
-	{
-		insert_before(list, list->first, new_node);
-	}
-}
-
-void insert_last(vmm_list *list, vmm_node *new_node)
-{
-	if (list->last == NULL)
-	{
-		insert_first(list, new_node);
-	}
-	else
-	{
-		insert_after(list, list->last, new_node);
-	}
-}
-
-void remove(vmm_list *list, vmm_node *node)
-{
-	if (node->prev == NULL)
-	{
-		list->first = node->next;
-	}
-	else
-	{
-		node->prev->next = node->next;
-	}
-	
-	if (node->next == NULL)
-	{
-		list->last = node->prev;
-	}
-	else
-	{
-		node->next->prev = node->prev;
-	}
-}
-
-vmm_node *search_adjacent_free()
-{
-	vmm_node *result = NULL;
-	vmm_node *candidate = free_mem->first;
-	
-	do
-	{
-		if ((candidate->next != NULL) && ((candidate->virt_addr + candidate->size) == (candidate->next->virt_addr)))
-		{
-			result = candidate;
-			break;
-		}
-		candidate = candidate->next;
-	} while (candidate != NULL);
-	
-	return result;
-}
-
-void compact_after(vmm_node *node)
-{
-	// compacts a node with the one after it
-	vmm_node *next_node = node->next;
-	
-	u32int new_size = node->size + next_node->size;
-	
-	node->size = new_size;
-	
-	remove(free_mem, next_node);
-}
-
-void compact_all_free()
-{
-	vmm_node *node = search_adjacent_free();
-	
-	while (node != NULL)
-	{
-		compact_after(node);
-		node = search_adjacent_free();
-	}
-}
-
-void print_node(vmm_node *node)
-{
-	put_str("\nprev=");
-	put_hex((u32int) node->prev);
-	
-	put_str(" node=");
-	put_hex((u32int) node);
-	
-	put_str(" next=");
-	put_hex((u32int) node->next);
-	
-	put_str(" virt_addr=");
-	put_hex(node->virt_addr);
-	
-	put_str(" size=");
-	put_hex(node->size);
-}
-
-void print_all(vmm_list *list)
-{
-	vmm_node *current = list->first;
-	do
-	{
-		print_node(current);
-		current = current->next;
-	} while (current != NULL);
-}
-
 void print_all_free()
 {
-	put_str("\n\tfree_mem=");
-	put_hex((u32int) free_mem);
-	put_str(" first=");
-	put_hex((u32int) free_mem->first);
-	put_str(" last=");
-	put_hex((u32int) free_mem->last);
-	
-	if (free_mem->first != NULL)
+	if (free_memory->first != NULL)
 	{
-		print_all(free_mem);
+		print_allocation_list(free_memory);
 	}
 	else
 	{
@@ -444,22 +344,185 @@ void print_all_free()
 
 void print_all_used()
 {
-	put_str("\n\tused_mem=");
-	put_hex((u32int) used_mem);
-	put_str(" first=");
-	put_hex((u32int) used_mem->first);
-	put_str(" last=");
-	put_hex((u32int) used_mem->last);
-	
-	if (used_mem->first != NULL)
+	if (used_memory->first != NULL)
 	{
-		print_all(used_mem);
+		print_allocation_list(used_memory);
 	}
 	else
 	{
 		put_str("\nEmpty list.");
 	}
 }
+
+u32int *malloc(u32int size)
+{
+	// find a node i want to split
+	list_node_type *malloc_node = search_free(size);
+	
+	// split it, and get the address for the node
+	list_node_type *split_node = split_free(malloc_node, size);
+	
+	// remove it from the free list
+	remove(free_memory, split_node);
+	
+	// put it on the used list
+	insert_last(used_memory, split_node);
+	
+	// create a pointer to the new allocation
+	allocation_type *malloc_node_data = (allocation_type *) malloc_node->data;
+	u32int *malloc_ptr = (u32int *) malloc_node_data->virt_addr;
+	
+	// return the pointer
+	return malloc_ptr;
+}
+
+list_node_type *search_free(u32int size)
+{
+	// searches for a free node that's greater than or equal to size
+	list_node_type *result = NULL;
+	list_node_type *candidate = free_memory->first;
+	
+	do
+	{
+		allocation_type *node_data = candidate->data;
+		
+		if (node_data->size >= size)
+		{
+			result = candidate;
+			break;
+		}
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+}
+
+list_node_type *split_free(list_node_type *node, u32int size)
+{
+	// make a pointer to the node data
+	allocation_type *node_data = node->data;
+	
+	// get a new node
+	list_node_type *new_node = get_unused_node();
+	
+	// make a pointer to the new node data
+	allocation_type *new_node_data = new_node->data;
+	
+	// figure out the virtual address for the new node
+	new_node_data->virt_addr = node_data->virt_addr + size;
+	
+	// figure out the size of the new node
+	new_node_data->size = node_data->size - size;
+	
+	// adjust the size of the existing node
+	node_data->size = size;
+	
+	// insert the new node on the list after the existing node
+	insert_after(free_memory, node, new_node);
+	
+	// return the node
+	return node;
+}
+
+void free(u32int *virt_addr)
+{
+	// find the node on the used list for the virutal address we're freeing
+	list_node_type *used_node = search_used((u32int) virt_addr);
+	
+	// find the node on the free list that it belongs ahead of
+	list_node_type *goes_before = search_free_neighbor(used_node);
+	
+	// remove the used node from the used memory list
+	remove(used_memory, used_node);
+	
+	// put it on the free memory list
+	insert_before(free_memory, goes_before, used_node);
+	
+	// compact the list
+	compact_all_free();
+}
+
+list_node_type *search_free_neighbor(list_node_type *node)
+{
+	// returns a result suitable for an insert before on the free memory list
+	list_node_type *result = NULL;
+	list_node_type *candidate = free_memory->first;
+	
+	do
+	{
+		// make a pointer to the candidate data
+		allocation_type *candidate_data = candidate->data;
+		
+		// make a pointer to the node data
+		allocation_type *node_data = node->data;
+		
+		if (candidate_data->virt_addr > node_data->virt_addr)
+		{
+			result = candidate;
+			break;
+		}
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+}
+
+list_node_type *search_used(u32int virt_addr)
+{
+	// searched the used memory list for a node with a specific virtual
+	// address associated with the region
+	
+	list_node_type *result = NULL;
+	list_node_type *candidate = used_memory->first;
+	
+	do
+	{
+		allocation_type *candidate_data = candidate->data;
+		
+		if (candidate_data->virt_addr == virt_addr)
+		{
+			result = candidate;
+			break;
+		}
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
