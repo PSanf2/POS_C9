@@ -112,7 +112,23 @@ void print_list(list_type *list)
 	} while (current != NULL);
 }
 
-
+u32int highest_node_addr(list_type *list)
+{
+	// searches through a list and finds the highest used virt addr for a node
+	list_node_type *candidate = list->first;
+	u32int result = (u32int) candidate;
+	
+	do
+	{
+		if ((u32int) candidate > result)
+		{
+			result = (u32int) candidate;
+		}
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+}
 
 
 

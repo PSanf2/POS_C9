@@ -204,8 +204,7 @@ void paging_initialize(struct multiboot *mboot_ptr)
 	// register my interrupt handler
 	register_interrupt_handler(14, (isr) &page_fault_interrupt_handler);
 	
-	// initialize the virtual memory manager.
-	vmm_initialize();
+	
 }
 
 void page_fault_interrupt_handler(registers regs)
@@ -454,6 +453,18 @@ void unmap_page(u32int virt_addr)
 	// tell the TLB that the page table entry has been updated.
 	invlpg((virt_addr & ~(0xFFF)));
 	
+}
+
+void print_page_directory(volatile page_directory_type *page_directory)
+{
+	put_str("\n\tpage_directory=");
+	put_hex((u32int) page_directory);
+	
+	put_str(" virt_addr=");
+	put_hex((u32int) page_directory->virt_addr);
+	
+	put_str(" phys_addr=");
+	put_hex(page_directory->phys_addr);
 }
 
 

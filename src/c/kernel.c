@@ -26,6 +26,11 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	paging_initialize(mboot_ptr);
 	
+	// initialize the virtual memory manager.
+	vmm_initialize();
+	
+	initialize_tasking();
+	
 	enable_interrupts();
 	
 	timer_initialize(100);
@@ -109,38 +114,38 @@ void terminal()
 			// this is where i evaluate the token, and get ready to send the control elsewhere.
 			if (strcmp((string) token, "echo") == 0)
 			{
-				vga_buffer_put_str("\n");
-				vga_buffer_put_str(&terminal_buffer[token_size + 1]);
-				vga_buffer_put_str("\n");
+				put_str("\n");
+				put_str(&terminal_buffer[token_size + 1]);
+				put_str("\n");
 			}
 			else if (strcmp((string) token, "ticks") == 0)
 			{
-				vga_buffer_put_str("\n");
-				vga_buffer_put_dec(get_tick());
-				vga_buffer_put_str("\n");
+				put_str("\n");
+				put_dec(get_tick());
+				put_str("\n");
 			}
 			else if (strcmp((string) token, "clear") == 0)
 			{
 				clear_screen();
-				vga_buffer_put_str("\r");
+				put_str("\r");
 			}
 			
 			else if (strcmp((string) token, "readFault") == 0)
 			{
 				u32int *ptr = (u32int *) 0xA0000000;
 				u32int do_fault = *ptr;
-				vga_buffer_put_str("\n");
-				vga_buffer_put_hex(do_fault); // this should print whatever garbage is in logical address 0xBADC0DE
-				vga_buffer_put_str("\n");
-				vga_buffer_put_str("Done with read fault test.\n"); // never called
+				put_str("\n");
+				put_hex(do_fault); // this should print whatever garbage is in logical address 0xBADC0DE
+				put_str("\n");
+				put_str("Done with read fault test.\n");
 			}
 			else if (strcmp((string) token, "writeFault") == 0)
 			{
 				u32int *ptr = (u32int *) 0xA0000000;
 				*ptr = 0xBADC0DE;
-				vga_buffer_put_str("\n");
-				vga_buffer_put_hex(*ptr); // this should print 0xDEADC0DE
-				vga_buffer_put_str("\nDone with write fault test.\n");
+				put_str("\n");
+				put_hex(*ptr); // this should print 0xDEADC0DE
+				put_str("\nDone with write fault test.\n");
 			}
 			else if (strcmp((string) token, "mapTest") == 0)
 			{
@@ -196,16 +201,31 @@ void terminal()
 			}
 			else if (strcmp((string) token, "malloc") == 0)
 			{
+				put_str("\n");
 				
 				u32int size = str_to_u32int(&terminal_buffer[token_size + 1]);
 				
 				u32int *malloc_ptr = malloc(size);
 				
-				vga_buffer_put_str("\n");
+				put_str("\nmalloc_ptr=");
 				
 				put_hex((u32int) malloc_ptr);
 				
-				vga_buffer_put_str("\n");
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "malloc_above") == 0)
+			{
+				put_str("\n");
+				
+				u32int size = str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				u32int *malloc_ptr = malloc_above(size, 0xE0000000, 0x400);
+				
+				put_str("\nmalloc_ptr=");
+				
+				put_hex((u32int) malloc_ptr);
+				
+				put_str("\n");
 			}
 			else if (strcmp((string) token, "free") == 0)
 			{
@@ -213,14 +233,25 @@ void terminal()
 				
 				free((u32int *) addr_to_free);
 				
-				vga_buffer_put_str("\n");
+				put_str("\n");
 			}
-			else if (strcmp((string) token, "toHex") == 0)
+			else if (strcmp((string) token, "print_tasks") == 0)
+			{
+				print_task_list();
+				
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "print_current_task") == 0)
+			{
+				print_current_task();
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "hex_convert") == 0)
 			{
 				u32int decNumber = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
 				
 				put_str("\n");
-				put_str(&terminal_buffer[token_size + 1]);
+				put_hex(decNumber);
 				put_str(" = ");
 				put_dec(decNumber);
 				put_str("\n");
@@ -230,9 +261,7 @@ void terminal()
 			// else if () {}
 			else
 			{
-				vga_buffer_put_str("\n");
-				vga_buffer_put_str("Unknown command.");
-				vga_buffer_put_str("\n");
+				put_str("\nUnknown command.\n");
 			}
 			
 			// clear the buffer.

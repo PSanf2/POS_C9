@@ -24,8 +24,7 @@ void print_allocation_list(list_type *list);
 void compact_after(list_node_type *node);
 list_node_type *search_adjacent_free();
 void compact_all_free();
-list_node_type *get_unused_node();
-u32int highest_node_addr(list_type *list);
+list_node_type *get_unused_vmm_node();
 void print_all_free();
 void print_all_used();
 u32int *malloc(u32int size);
@@ -34,5 +33,7 @@ list_node_type *split_free(list_node_type *node, u32int size);
 void free(u32int *virt_addr);
 list_node_type *search_free_neighbor(list_node_type *node);
 list_node_type *search_used(u32int virt_addr);
+u32int *malloc_above(u32int size, u32int above, u32int align);
+list_node_type *search_free_above(u32int size, u32int above);
 
 #endif

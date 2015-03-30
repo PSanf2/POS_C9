@@ -65,4 +65,6 @@ void map_page(u32int virt_addr, u32int phys_addr);
 // used to unmap a page
 void unmap_page(u32int virt_addr);
 
+void print_page_directory(volatile page_directory_type *page_directory);
+
 #endif

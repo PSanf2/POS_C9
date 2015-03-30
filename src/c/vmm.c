@@ -16,7 +16,7 @@
 // i should never need to worry about finding the address to use for the free nodes list becuase they've already been placed.
 // i'm just making sure i keep them around so i don't loose them, and create a memeory leak
 
-static list_type *unused_nodes;
+static list_type *unused_vmm_nodes;
 static list_type *used_memory;
 static list_type *free_memory;
 
@@ -24,16 +24,16 @@ void vmm_initialize()
 {
 	put_str("\nVMM Initialize");
 	
-	unused_nodes = (list_type *) 0xFF800000;
-	used_memory = (list_type *) ((u32int) unused_nodes + sizeof(list_type));
+	unused_vmm_nodes = (list_type *) 0xFF800000;
+	used_memory = (list_type *) ((u32int) unused_vmm_nodes + sizeof(list_type));
 	free_memory = (list_type *) ((u32int) used_memory + sizeof(list_type));
 	
 	// print it out
 	put_str("\nsizeof(list_type)=");
 	put_hex(sizeof(list_type));
 	
-	put_str("\nunused_nodes=");
-	put_hex((u32int) unused_nodes);
+	put_str("\nunused_vmm_nodes=");
+	put_hex((u32int) unused_vmm_nodes);
 	
 	put_str("\nused_memory=");
 	put_hex((u32int) used_memory);
@@ -46,8 +46,8 @@ void vmm_initialize()
 	
 	// initialize the lists to null pointers
 	
-	unused_nodes->first = NULL;
-	unused_nodes->last = NULL;
+	unused_vmm_nodes->first = NULL;
+	unused_vmm_nodes->last = NULL;
 	
 	used_memory->first = NULL;
 	used_memory->last = NULL;
@@ -194,15 +194,6 @@ void print_allocation_node(list_node_type *node)
 
 void print_allocation_list(list_type *list)
 {
-	put_str("\nlist=");
-	put_hex((u32int) list);
-	
-	put_str(" first=");
-	put_hex((u32int) list->first);
-	
-	put_str(" last=");
-	put_hex((u32int) list->last);
-	
 	list_node_type *current = list->first;
 	do
 	{
@@ -225,7 +216,7 @@ void compact_after(list_node_type *node)
 	
 	remove(free_memory, next_node);
 	
-	insert_last(unused_nodes, next_node);
+	insert_last(unused_vmm_nodes, next_node);
 	
 }
 
@@ -264,7 +255,7 @@ void compact_all_free()
 	}
 }
 
-list_node_type *get_unused_node()
+list_node_type *get_unused_vmm_node()
 {
 	// this will return a node that can be recycled.
 	// it'll check the unused nodes list to see if there's something there
@@ -275,13 +266,13 @@ list_node_type *get_unused_node()
 	list_node_type *result = NULL;
 	
 	// if there's a node available on the unused nodes list
-	if (unused_nodes->first != NULL)
+	if (unused_vmm_nodes->first != NULL)
 	{
 		// make our result the first node on the unused nodes list
-		result = unused_nodes->first;
+		result = unused_vmm_nodes->first;
 		
 		// remove that node from the list
-		remove(unused_nodes, unused_nodes->first);
+		remove(unused_vmm_nodes, unused_vmm_nodes->first);
 	}
 	else
 	{
@@ -311,26 +302,17 @@ list_node_type *get_unused_node()
 	return result;
 }
 
-u32int highest_node_addr(list_type *list)
-{
-	// searches through a list and finds the highest used virt addr for a node
-	list_node_type *candidate = list->first;
-	u32int result = (u32int) candidate;
-	
-	do
-	{
-		if ((u32int) candidate > result)
-		{
-			result = (u32int) candidate;
-		}
-		candidate = candidate->next;
-	} while (candidate != NULL);
-	
-	return result;
-}
-
 void print_all_free()
 {
+	put_str("\nfree_memory=");
+	put_hex((u32int) free_memory);
+	
+	put_str(" first=");
+	put_hex((u32int) free_memory->first);
+	
+	put_str(" last=");
+	put_hex((u32int) free_memory->last);
+	
 	if (free_memory->first != NULL)
 	{
 		print_allocation_list(free_memory);
@@ -343,6 +325,15 @@ void print_all_free()
 
 void print_all_used()
 {
+	put_str("\nused_memory=");
+	put_hex((u32int) used_memory);
+	
+	put_str(" first=");
+	put_hex((u32int) used_memory->first);
+	
+	put_str(" last=");
+	put_hex((u32int) used_memory->last);
+	
 	if (used_memory->first != NULL)
 	{
 		print_allocation_list(used_memory);
@@ -402,7 +393,7 @@ list_node_type *split_free(list_node_type *node, u32int size)
 	allocation_type *node_data = node->data;
 	
 	// get a new node
-	list_node_type *new_node = get_unused_node();
+	list_node_type *new_node = get_unused_vmm_node();
 	
 	// make a pointer to the new node data
 	allocation_type *new_node_data = new_node->data;
@@ -489,7 +480,89 @@ list_node_type *search_used(u32int virt_addr)
 	return result;
 }
 
+u32int *malloc_above(u32int size, u32int above, u32int align)
+{
+	// this function will be used to allocate a portion of memory above
+	// a given value, and aligned to a given value.
+	// in order to do this i will need to search through free list to
+	// find a region that starts after above, then count up to find the
+	// first address of the region that's properly aligned, malloc some
+	// memory to get the desired region, malloc size, and free the extra
+	// when i search for a region greater than above i'll need to make sure
+	// that i can break it apart, and still have enough room left to meet
+	// size. i should probably search for a node that's size + align
+	
+	// find a node with a virtual address greater than above + align
+	
+	list_node_type *malloc_node = search_free_above((size + align), above);
+	
+	// figure out where i'll need to split that node
+	allocation_type *malloc_data = malloc_node->data;
+	u32int start_addr = malloc_data->virt_addr;
+	u32int split_size = 0;
+	
+	while (start_addr < above)
+	{
+		start_addr++;
+		split_size++;
+	}
+	
+	while (start_addr % align != 0)
+	{
+		start_addr++;
+		split_size++;
+	}
+	
+	// split it
+	if (split_size > 0)
+	{
+		malloc_node = split_free(malloc_node, split_size);
+		malloc_node = malloc_node->next;
+	}
+	
+	// split it, and get the address for the node
+	list_node_type *split_node = split_free(malloc_node, size);
+	
+	// remove it from the free list
+	remove(free_memory, split_node);
+	
+	// put it on the used list
+	insert_last(used_memory, split_node);
+	
+	// create a pointer to the new allocation
+	allocation_type *malloc_node_data = (allocation_type *) malloc_node->data;
+	u32int *malloc_ptr = (u32int *) malloc_node_data->virt_addr;
+	
+	// compact the free memory
+	//compact_all_free();
+	
+	// return the pointer
+	return malloc_ptr;
+	
+}
 
+list_node_type *search_free_above(u32int size, u32int above)
+{
+	list_node_type *result = NULL;
+	list_node_type *candidate = free_memory->first;
+	
+	do
+	{
+		allocation_type *node_data = candidate->data;
+		
+		//if ((node_data->virt_addr > above) && (node_data->virt_addr + node_data->size >= size))
+		// the above if statement is wrong. causing the thing to always return null.
+		
+		if ((((node_data->virt_addr < above) && (node_data->virt_addr + node_data->size > above)) || (node_data->virt_addr > above)) && (node_data->size >= size))
+		{
+			result = candidate;
+			break;
+		}
+		candidate = candidate->next;
+	} while (candidate != NULL);
+	
+	return result;
+}
 
 
 
