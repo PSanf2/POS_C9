@@ -256,6 +256,10 @@ void terminal()
 				put_dec(decNumber);
 				put_str("\n");
 			}
+			else if (strcmp((string) token, "fork") == 0)
+			{
+				fork();
+			}
 			
 			// else if () {}
 			// else if () {}

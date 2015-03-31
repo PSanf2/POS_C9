@@ -16,15 +16,15 @@
 // i should never need to worry about finding the address to use for the free nodes list becuase they've already been placed.
 // i'm just making sure i keep them around so i don't loose them, and create a memeory leak
 
-static list_type *unused_vmm_nodes;
-static list_type *used_memory;
-static list_type *free_memory;
+volatile list_type *unused_vmm_nodes;
+volatile list_type *used_memory;
+volatile list_type *free_memory;
 
 void vmm_initialize()
 {
 	put_str("\nVMM Initialize");
 	
-	unused_vmm_nodes = (list_type *) 0xFF800000;
+	unused_vmm_nodes = (list_type *) 0xFF400000;
 	used_memory = (list_type *) ((u32int) unused_vmm_nodes + sizeof(list_type));
 	free_memory = (list_type *) ((u32int) used_memory + sizeof(list_type));
 	
