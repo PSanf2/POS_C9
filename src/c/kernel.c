@@ -258,7 +258,15 @@ void terminal()
 			}
 			else if (strcmp((string) token, "fork") == 0)
 			{
-				fork();
+				u32int task_id = fork();
+				put_str("\nNew task id: ");
+				put_dec(task_id);
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "switch_task") == 0)
+			{
+				u32int task_id = str_to_u32int(&terminal_buffer[token_size + 1]);
+				switch_task(task_id);
 			}
 			
 			// else if () {}

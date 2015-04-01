@@ -19,7 +19,10 @@ void initialize_tasking();
 void print_task_list();
 void print_task_node(list_node_type *node);
 void print_current_task();
-void fork();
+u32int fork();
+void switch_task(u32int task_id);
+list_node_type *search_task_id(u32int id);
+void next_task();
 void kill(u32int process_id);
 list_node_type *get_unused_task_node();
 

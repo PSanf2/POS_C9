@@ -57,7 +57,7 @@ u32int first_free();
 u32int alloc_frame();
 
 // will be use to switch the page directory so i can use another address space
-void switch_page_directory(page_directory_type *page_dir_ptr);
+void switch_page_directory(volatile page_directory_type *page_dir_ptr);
 
 // will be used to map a physical address to a virtual address
 void map_page(u32int virt_addr, u32int phys_addr);

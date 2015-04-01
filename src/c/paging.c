@@ -210,8 +210,8 @@ void paging_initialize(struct multiboot *mboot_ptr)
 void page_fault_interrupt_handler(registers regs)
 {
 	
-	put_str("\nPage fault at virtual address ");
-	put_hex(read_cr2());
+	//put_str("\nPage fault at virtual address ");
+	//put_hex(read_cr2());
 	
 	u32int present = regs.err_code & 0x1;
 	__attribute__ ((unused)) u32int rw = regs.err_code & 0x2; // will be used later
@@ -385,9 +385,13 @@ u32int alloc_frame()
 	return phys_addr;
 }
 
-void switch_page_directory(__attribute__((unused)) page_directory_type *page_dir_ptr)
+void switch_page_directory(volatile page_directory_type *page_dir_ptr)
 {
-	
+	current_page_directory = page_dir_ptr;
+	asm volatile(	"mov %0, %%cr3"
+					: /* no outputs */
+					: "r" (page_dir_ptr->phys_addr)
+				);
 }
 
 void map_page(u32int virt_addr, u32int phys_addr)

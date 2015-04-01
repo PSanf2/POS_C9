@@ -12,16 +12,16 @@ extern u32int kernel_end;
 
 extern volatile page_directory_type *current_page_directory;
 
-static list_type *unused_task_nodes;
+list_type *unused_task_nodes;
 
-static list_type *task_list;
-static list_node_type *current_task;
+list_type *task_list;
+list_node_type *current_task;
 
 static u32int process_id = 1;
 
 void initialize_tasking()
 {
-	put_str("\nInitializing tasking.");
+	//put_str("\nInitializing tasking.");
 	
 	// set up the pointer to the list of unused nodes
 	unused_task_nodes = (list_type *) 0xFF000000;
@@ -73,7 +73,7 @@ void initialize_tasking()
 	// set the current task to be the first one on the list
 	current_task = task_list->first;
 	
-	put_str("\nInitializing tasking done.\n");
+	//put_str("\nInitializing tasking done.\n");
 }
 
 void print_task_list()
@@ -102,7 +102,7 @@ void print_task_node(list_node_type *node)
 	task_type *node_data = (task_type *) node->data;
 	
 	put_str("\n\tid=");
-	put_hex(node_data->id);
+	put_dec(node_data->id);
 	
 	put_str(" esp=");
 	put_hex(node_data->esp);
@@ -121,9 +121,9 @@ void print_current_task()
 	print_task_node(current_task);
 }
 
-void fork()
+u32int fork()
 {
-	put_str("\nfork called.");
+	//put_str("\nfork called.");
 	
 	// take care of the allocations and pointers first
 	
@@ -131,36 +131,36 @@ void fork()
 	list_node_type *new_node = get_unused_task_node();
 	
 	// print it
-	put_str("\nnew_node=");
-	put_hex((u32int) new_node);
+	//put_str("\nnew_node=");
+	//put_hex((u32int) new_node);
 	
 	// create a pointer to the node data
 	task_type *new_task = (task_type *) new_node->data;
 	
 	// print it
-	put_str("\nnew_task=");
-	put_hex((u32int) new_task);
+	//put_str("\nnew_task=");
+	//put_hex((u32int) new_task);
 	
 	// allocate some space for the page directory structure, above the kernel
 	page_directory_type *page_dir = (page_directory_type *) malloc_above(sizeof(page_directory_type), kernel_end, 1);
 	
 	// print it
-	put_str("\npage_dir=");
-	put_hex((u32int) page_dir);
+	//put_str("\npage_dir=");
+	//put_hex((u32int) page_dir);
 	
 	// allocate a frame where the new page directory will live
 	u32int dir_phys_addr = alloc_frame();
 	
 	// print it
-	put_str("\ndir_phys_addr=");
-	put_hex(dir_phys_addr);
+	//put_str("\ndir_phys_addr=");
+	//put_hex(dir_phys_addr);
 	
 	// allocate 4KB of page aligned virt addr space for the page directory
 	u32int *dir_virt_addr = malloc_above(0x1000, kernel_end, 0x1000);
 	
 	// print it
-	put_str("\ndir_virt_addr=");
-	put_hex((u32int) dir_virt_addr);
+	//put_str("\ndir_virt_addr=");
+	//put_hex((u32int) dir_virt_addr);
 	
 	// map the address
 	map_page((u32int) dir_virt_addr, dir_phys_addr);
@@ -175,7 +175,7 @@ void fork()
 	new_task->page_directory = page_dir;
 	
 	// print it out
-	print_task_node(new_node);
+	//print_task_node(new_node);
 	
 	// set up the new page directory
 	
@@ -187,53 +187,108 @@ void fork()
 	{
 		dir_virt_addr[i] = current_page_directory->virt_addr[i];
 	}
+	dir_virt_addr[1021] = 0 | 2;
+	dir_virt_addr[1023] = dir_phys_addr | 3;
 	
-	/*
-	// i'll copy the current page directory in to the new one with the
-	// exception of the mappings for the virtual memory manager.
-	// i have a problem here. if i don't copy the crap for the VMM lists
-	// then the new address space won't have any way to allocate virtual
-	// address space. if i copy the PDE then the new task will share the
-	// VMM with the current task. I don't have a handy way of handling
-	// this w/o switching to the new task, and initializing the vmm.
-	// it's either that, or i can map some memory into the vmm's list
-	// space, and initialize it from here.
+	// i need to switch the address space to the new page directory
+	// and initialize the vmm
 	
-	// probably better to initialize it from here.
-	// save the vmm list mappings from the current page directory,
-	// allocate a frame, map it to the vmm area, initialize the vmm,
-	// copy the page directory, and restore the original vmm PDE.
+	// save the physical address for the current page directory
+	volatile page_directory_type *curr_page_dir = current_page_directory;
 	
-	// save the current mapping for 1021.
-	u32int curr_PD1021 = current_page_directory->virt_addr[1021];
+	// switch to the new page directory
+	switch_page_directory(page_dir);
 	
-	// allocate a frame
-	u32int new_vmm_list_phys_addr = alloc_frame();
-	
-	// map that frame to the address used for the vmm stuff
-	map_page(0xFF400000, new_vmm_list_phys_addr);
-	
-	// initialize the memory manager to create a new virtual address space
+	// initialize the vmm for it
 	vmm_initialize();
 	
-	// save the new value on PD[1021] for the new page directory.
-	u32int new_PD1021 = current_page_directory->virt_addr[1021];
+	// switch back
+	switch_page_directory(curr_page_dir);
 	
-	// restore the original value
-	current_page_directory->virt_addr[1021] = curr_PD1021;
+	// i need to copy the stack?
 	
-	// put the new value on the new page directory
-	dir_virt_addr[1021] = new_PD1021;
 	
-	// put the physical address for the new page directory on the proper
-	// place in the new page directory
-	dir_virt_addr[1023] = dir_phys_addr | 3;
+	
+	
+	
+	
+	// populate the other values that need to go on the task data structure
+	
+	new_task->id = process_id++;
+	new_task->esp = 0;
+	new_task->ebp = 0;
+	
+	//print_task_node(new_node);
+	
+	// put the node for the new task on the list
+	insert_last(task_list, new_node);
 	
 	// copy the stack
 	// put the node on the list
-	*/
 	
-	put_str("\nfork done.\n");
+	//put_str("\nfork done.\n");
+	
+	// return the new task id
+	return new_task->id;
+}
+
+void switch_task(u32int task_id)
+{
+	put_str("\nSwitching to task ");
+	put_dec(task_id);
+	
+	// i'm  going to have to search the list for the task w/ that id
+	// i'll then need to get the physical address for the page directory
+	// i'll then need to change the page directory, and current task
+	// if the task isn't found then no big whoop. just don't return anything
+	list_node_type *task_node = search_task_id(task_id);
+	
+	// if i didn't find a task with that id.
+	if (task_node == NULL)
+	{
+		put_str("\nTask ID ");
+		put_dec(task_id);
+		put_str(" not found.");
+		return;
+	}
+	
+	print_task_node(task_node);
+	
+	// make a pointer to the task node's data
+	task_type *task_data = task_node->data;
+	
+	// make a pointer to the page directory information in the task data
+	volatile page_directory_type *page_dir = task_data->page_directory;
+	
+	switch_page_directory(page_dir);
+	
+	current_task = task_node;
+	
+	put_str("\nSwitch done.\n");
+}
+
+list_node_type *search_task_id(u32int id)
+{
+	list_node_type *result = NULL;
+	list_node_type *current = task_list->first;
+	
+	do
+	{
+		task_type *task = current->data;
+		if (task->id == id)
+		{
+			result = current;
+			break;
+		}
+		current = current->next;
+	} while (current != NULL);
+	
+	return result;
+}
+
+void next_task()
+{
+	
 }
 
 void kill(__attribute__((unused)) u32int process_id)
@@ -261,7 +316,7 @@ list_node_type *get_unused_task_node()
 			highest_virt_addr = highest_node_addr(task_list);
 		}
 		
-		u32int new_node_addr = highest_virt_addr + sizeof(list_type) + sizeof(list_node_type);
+		u32int new_node_addr = highest_virt_addr + sizeof(list_node_type) + sizeof(list_node_type) + sizeof(list_node_type);
 		
 		u32int new_data_addr = new_node_addr + sizeof(list_node_type);
 		

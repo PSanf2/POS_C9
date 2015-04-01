@@ -16,33 +16,33 @@
 // i should never need to worry about finding the address to use for the free nodes list becuase they've already been placed.
 // i'm just making sure i keep them around so i don't loose them, and create a memeory leak
 
-volatile list_type *unused_vmm_nodes;
-volatile list_type *used_memory;
-volatile list_type *free_memory;
+list_type *unused_vmm_nodes;
+list_type *used_memory;
+list_type *free_memory;
 
 void vmm_initialize()
 {
-	put_str("\nVMM Initialize");
+	//put_str("\nVMM Initialize");
 	
 	unused_vmm_nodes = (list_type *) 0xFF400000;
 	used_memory = (list_type *) ((u32int) unused_vmm_nodes + sizeof(list_type));
 	free_memory = (list_type *) ((u32int) used_memory + sizeof(list_type));
 	
 	// print it out
-	put_str("\nsizeof(list_type)=");
-	put_hex(sizeof(list_type));
+	//put_str("\nsizeof(list_type)=");
+	//put_hex(sizeof(list_type));
 	
-	put_str("\nunused_vmm_nodes=");
-	put_hex((u32int) unused_vmm_nodes);
+	//put_str("\nunused_vmm_nodes=");
+	//put_hex((u32int) unused_vmm_nodes);
 	
-	put_str("\nused_memory=");
-	put_hex((u32int) used_memory);
+	//put_str("\nused_memory=");
+	//put_hex((u32int) used_memory);
 	
-	put_str("\nfree_memory=");
-	put_hex((u32int) free_memory);
+	//put_str("\nfree_memory=");
+	//put_hex((u32int) free_memory);
 	
-	put_str("\nsizeof(list_node_type)=");
-	put_hex(sizeof(list_node_type));
+	//put_str("\nsizeof(list_node_type)=");
+	//put_hex(sizeof(list_node_type));
 	
 	// initialize the lists to null pointers
 	
@@ -173,7 +173,7 @@ void vmm_initialize()
 	// i need to compact all of the free nodes
 	compact_all_free();
 	
-	put_str("\nVMM Initialize Done.\n");
+	//put_str("\nVMM Initialize Done.\n");
 }
 
 void print_allocation_node(list_node_type *node)
