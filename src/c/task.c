@@ -248,7 +248,7 @@ void switch_task(u32int task_id)
 	{
 		put_str("\nTask ID ");
 		put_dec(task_id);
-		put_str(" not found.");
+		put_str(" not found.\n");
 		return;
 	}
 	
