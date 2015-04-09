@@ -22,19 +22,20 @@
 
 #define VGA_BUFFER_SIZE 4096
 
-extern void set_text_color(u8int foreground_color, u8int background_color);
-extern void put_str(char *str);
-extern void put_char(char c);
-extern void scroll();
-extern void move_csr();
-extern void put_dec(u32int n);
-extern void put_hex(u32int n);
-extern void clear_screen();
-extern void vga_set_handler(void (*callback)(u8int *buf, u16int size));
-extern void vga_flush();
-extern void vga_buffer_put_char(char c);
-extern void vga_buffer_put_str(char *str);
-extern void clear_line();
-extern void vga_buffer_put_dec(u32int n);
+void set_text_color(u8int foreground_color, u8int background_color);
+void put_str(char *str);
+void put_char(char c);
+void scroll();
+void move_csr();
+void put_dec(u32int n);
+void put_hex(u32int n);
+void clear_screen();
+void vga_set_handler(void (*callback)(u8int *buf, u16int size));
+void vga_flush();
+void vga_buffer_put_char(char c);
+void vga_buffer_put_str(char *str);
+void clear_line();
+void vga_buffer_put_dec(u32int n);
 void vga_buffer_put_hex(u32int n);
+
 #endif

@@ -24,7 +24,7 @@ struct gdt_ptr
 struct gdt_entry gdt[3];
 struct gdt_ptr gdtptr;
 
-extern void gdt_initialize();
-extern void gdt_set_gate(s32int num, u32int base, u32int limit, u8int access, u8int gran);
+void gdt_initialize();
+void gdt_set_gate(s32int num, u32int base, u32int limit, u8int access, u8int gran);
 
 #endif

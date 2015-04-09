@@ -23,7 +23,7 @@ struct idt_ptr
 struct idt_entry idt[256];
 struct idt_ptr idtptr;
 
-extern void idt_initialize();
-extern void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags);
+void idt_initialize();
+void idt_set_gate(u8int num, u32int base, u16int sel, u8int flags);
 
 #endif

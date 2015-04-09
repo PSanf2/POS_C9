@@ -3,8 +3,7 @@
 
 #include <system.h>
 
-struct registers;
-extern void irq_handler(registers regs);
+void irq_handler(registers regs);
 
 extern void irq0();
 extern void irq1();

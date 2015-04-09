@@ -6,8 +6,8 @@
 // an array(?)[a portion of memory, at least] containing pointers to the ISRs
 isr interrupt_handler[256];
 
-extern void register_interrupt_handler(u8int n, isr handler);
-extern void isr_handler(registers regs);
+void register_interrupt_handler(u8int n, isr handler);
+void isr_handler(registers regs);
 
 #define IRQ0 32
 #define IRQ1 33

@@ -23,6 +23,6 @@ void insert_last(list_type *list, list_node_type *new_node);
 void remove(list_type *list, list_node_type *node);
 void print_node(list_node_type *node);
 void print_list(list_type *list);
-u32int highest_node_addr(list_type *list);
+list_node_type *highest_node(list_type *list);
 
 #endif

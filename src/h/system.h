@@ -12,17 +12,19 @@ typedef          short s16int;
 typedef unsigned char  u8int;
 typedef          char  s8int;
 
+typedef enum { TRUE = 1, FALSE = 0} boolean;
+
 // define a structure representing the system registers.
-struct registers_struct
+typedef struct registers_struct
 {
     u32int ds;
     u32int edi, esi, ebp, esp, ebx, edx, ecx, eax;
     u32int int_no, err_code;
     u32int eip, cs, eflags, useresp, ss;
-};
+} registers;
 
 // define the structure to be a data type
-typedef struct registers_struct registers;
+//typedef struct registers_struct registers;
 
 // define a datatype for a function that has one paramater of type registers and returns a *isr (function pointer)[i think]
 typedef void (*isr)(registers);
@@ -42,6 +44,8 @@ typedef void (*isr)(registers);
 #include <keyboard.h>
 #include <vga.h>
 #include <list.h>
+#include <bitmap.h>
+#include <pmm.h>
 #include <paging.h>
 #include <vmm.h>
 #include <task.h>

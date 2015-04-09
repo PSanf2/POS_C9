@@ -24,12 +24,13 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	memset((u8int *) &interrupt_handler, 0, sizeof(isr) * 256);
 	
-	paging_initialize(mboot_ptr);
+	// this is where i need to initialize the physical memory manager
+	// paging, the virtual memory manager, and context switching
+	pmm_initialize(mboot_ptr);
 	
-	// initialize the virtual memory manager.
+	paging_initialize();
+	
 	vmm_initialize();
-	
-	initialize_tasking();
 	
 	enable_interrupts();
 	
@@ -129,10 +130,41 @@ void terminal()
 				clear_screen();
 				put_str("\r");
 			}
-			
+			else if (strcmp((string) token, "hex_convert") == 0)
+			{
+				u32int decNumber = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				
+				put_str("\n");
+				put_hex(decNumber);
+				put_str(" = ");
+				put_dec(decNumber);
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "physToVirt") == 0)
+			{
+				extern page_directory_type *current_page_directory;
+				u32int input_addr = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				u32int phys = phys_to_virt(current_page_directory, input_addr);
+				put_str("\nPhysical ");
+				put_hex(input_addr);
+				put_str(" = Virtual ");
+				put_hex(phys);
+				put_str("\n");
+			}
+			else if (strcmp((string) token, "virtToPhys") == 0)
+			{
+				extern page_directory_type *current_page_directory;
+				u32int input_addr = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				u32int virt = virt_to_phys(current_page_directory, input_addr);
+				put_str("\nVirtual ");
+				put_hex(input_addr);
+				put_str(" = Physical ");
+				put_hex(virt);
+				put_str("\n");
+			}
 			else if (strcmp((string) token, "readFault") == 0)
 			{
-				u32int *ptr = (u32int *) 0xA0000000;
+				u32int *ptr = (u32int *) 0xA2349876;
 				u32int do_fault = *ptr;
 				put_str("\n");
 				put_hex(do_fault); // this should print whatever garbage is in logical address 0xBADC0DE
@@ -141,63 +173,11 @@ void terminal()
 			}
 			else if (strcmp((string) token, "writeFault") == 0)
 			{
-				u32int *ptr = (u32int *) 0xA0000000;
+				u32int *ptr = (u32int *) 0xA2349876;
 				*ptr = 0xBADC0DE;
 				put_str("\n");
 				put_hex(*ptr); // this should print 0xDEADC0DE
 				put_str("\nDone with write fault test.\n");
-			}
-			else if (strcmp((string) token, "mapTest") == 0)
-			{
-				u32int virt_addr1 = 0xA0001000;
-				u32int virt_addr2 = 0xA000F000;
-				u32int phys_addr = 0x500000;
-				
-				map_page(virt_addr1, phys_addr);
-				u32int *ptr1 = (u32int *) virt_addr1;
-				*ptr1 = 0x1234;
-				put_str("\nTest for virt_addr1: *ptr1 = ");
-				put_hex(*ptr1);
-				
-				map_page(virt_addr2, phys_addr);
-				u32int *ptr2 = (u32int *) virt_addr2;
-				put_str("\nTest for virt_addr2: *ptr2 = ");
-				put_hex(*ptr2);
-				
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "unmapTest") == 0)
-			{
-				u32int virt_addr = 0xA0002000;
-				u32int phys_addr = 0x600000;
-				
-				map_page(virt_addr, phys_addr);
-				u32int *ptr1 = (u32int *) virt_addr;
-				*ptr1 = 0x1234;
-				put_str("\n*ptr1 = ");
-				put_hex(*ptr1);
-				
-				unmap_page(virt_addr);
-				u32int *ptr2 = (u32int *) virt_addr;
-				put_str("\n*ptr2 = ");
-				put_hex(*ptr2);
-				
-				map_page(virt_addr, phys_addr);
-				u32int *ptr3 = (u32int *) virt_addr;
-				put_str("\n*ptr3 = ");
-				put_hex(*ptr3);
-				
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "printFree") == 0)
-			{
-				print_all_free();
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "printUsed") == 0)
-			{
-				print_all_used();
-				put_str("\n");
 			}
 			else if (strcmp((string) token, "malloc") == 0)
 			{
@@ -213,20 +193,6 @@ void terminal()
 				
 				put_str("\n");
 			}
-			else if (strcmp((string) token, "malloc_above") == 0)
-			{
-				put_str("\n");
-				
-				u32int size = str_to_u32int(&terminal_buffer[token_size + 1]);
-				
-				u32int *malloc_ptr = malloc_above(size, 0xE0000000, 0x400);
-				
-				put_str("\nmalloc_ptr=");
-				
-				put_hex((u32int) malloc_ptr);
-				
-				put_str("\n");
-			}
 			else if (strcmp((string) token, "free") == 0)
 			{
 				u32int addr_to_free = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
@@ -235,39 +201,60 @@ void terminal()
 				
 				put_str("\n");
 			}
-			else if (strcmp((string) token, "print_tasks") == 0)
+			else if (strcmp((string) token, "printUsed") == 0)
 			{
-				print_task_list();
+				vmm_print_used();
+			}
+			else if (strcmp((string) token, "printFree") == 0)
+			{
+				vmm_print_free();
+			}
+			/*
+			else if (strcmp((string) token, "bitmap_test") == 0)
+			{
+				extern u32int end;
+				u32int kernel_end = (u32int) &end;
 				
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "print_current_task") == 0)
-			{
-				print_current_task();
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "hex_convert") == 0)
-			{
-				u32int decNumber = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
+				put_str("\nKernel ends at ");
+				put_hex(kernel_end);
 				
-				put_str("\n");
-				put_hex(decNumber);
-				put_str(" = ");
-				put_dec(decNumber);
-				put_str("\n");
+				bitmap_type *bitmap = (bitmap_type *) kernel_end;
+				bitmap->addr = (u8int *) kernel_end + sizeof(bitmap_type);
+				bitmap->bytes = 4;
+				
+				put_str("\nbitmap=");
+				put_hex((u32int) bitmap);
+				put_str(" bitmap->addr=");
+				put_hex((u32int) bitmap->addr);
+				put_str(" bitmap->bytes=");
+				put_dec(bitmap->bytes);
+				
+				clear_all_bits(bitmap);
+				
+				for (u32int i = 0; i < bitmap->bytes; i++)
+				{
+					put_str("\n\tbitmap->addr[");
+					put_dec(i);
+					put_str("] => ");
+					put_hex((u8int) bitmap->addr[i]);
+				}
+				
+				set_bit(bitmap, 9);
+				
+				if (any_bit_set(bitmap) == TRUE)
+				{
+					put_str("\nThere is a bit set. It is ");
+					put_hex(find_first_set(bitmap));
+				}
+				else
+				{
+					put_str("\nThere are no bits set.");
+				}
+				
+				put_str("\nDone.\n");
+				
 			}
-			else if (strcmp((string) token, "fork") == 0)
-			{
-				u32int task_id = fork();
-				put_str("\nNew task id: ");
-				put_dec(task_id);
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "switch_task") == 0)
-			{
-				u32int task_id = str_to_u32int(&terminal_buffer[token_size + 1]);
-				switch_task(task_id);
-			}
+			*/
 			
 			// else if () {}
 			// else if () {}
@@ -308,7 +295,7 @@ void terminal()
 				terminal_last_put++;
 			}
 		}
-
+		
 	}
 }
 

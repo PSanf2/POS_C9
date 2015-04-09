@@ -26,6 +26,7 @@
 .section .data
 	# Set up the boot page directory for 4MB pages
 	.align 0x1000
+	.global BootPageDirectory
 	BootPageDirectory:
 		# The first page directory entry, attributes read/write, present
 		.long 0x00000083
