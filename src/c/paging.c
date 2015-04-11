@@ -7,8 +7,6 @@ extern u32int kernel_end;
 page_directory_type kernel_page_directory;
 page_directory_type *current_page_directory;
 
-u32int page_table_virt_addr;
-
 void paging_initialize()
 {
 	/*
@@ -55,7 +53,7 @@ void paging_initialize()
 	}
 
 	// figure out where i'd like to put the page table
-	page_table_virt_addr = page_dir_virt_addr + 0x1000;
+	u32int page_table_virt_addr = page_dir_virt_addr + 0x1000;
 	
 	/*
 	put_str("\npage_dir_virt_addr=");
@@ -170,6 +168,9 @@ void page_fault_interrupt_handler(registers regs)
 {
 	//put_str("\nPage fault interrupt handler called.");
 	
+	put_str("\nPage fault at virt addr ");
+	put_hex(read_cr2());
+	
 	u32int present = regs.err_code & 0x1;
 	u32int rw = regs.err_code & 0x2;
 	u32int us = regs.err_code & 0x4;
@@ -247,7 +248,7 @@ void page_fault_interrupt_handler(registers regs)
 			}
 			
 			// put the physical address of the new page table on the page directory at the proper index, and set the attributes
-			page_directory[page_dir_index] = (u32int) new_table_phys_addr | 3;
+			page_directory[page_dir_index] = new_table_phys_addr | 3;
 			
 			// i need to figure out the recursive address where the new page table lives
 			u32int page_table_recursive_addr = 0xFFC00000 + (0x1000 * page_dir_index);
@@ -394,95 +395,113 @@ u32int virt_to_phys(page_directory_type *page_directory, u32int virt_addr)
 	return result;
 }
 
-void map_page(page_directory_type *page_directory, u32int virt_addr, u32int phys_addr)
+void map_page(u32int virt_addr, u32int phys_addr)
 {
-	put_str("\npage_directory=");
-	put_hex((u32int) page_directory);
-	put_str("\npage_directory->virt_addr=");
-	put_hex((u32int) page_directory->virt_addr);
-	put_str(" page_directory->phys_addr=");
-	put_hex(page_directory->phys_addr);
+	// sanitise the inputs and make sure both of the addresses are page aligned.
+	// examine the virtual address to determine the page dir index, and page table index
+	// make sure there's a page table set up for that virtual address
+	// if there isn't, create a page table, but make sure i'm not creating it at that physical address
+	// update the page table to map the physical address
+	// flush the TLB for the virtual address
 	
-	put_str("\nvirt_addr=");
-	put_hex(virt_addr);
-	put_str("\tphys_addr");
-	put_hex(phys_addr);
-	
-	/*
-	 * With this function I will be looking to map a physical frame to
-	 * a virtual page. I will need to make sure I update both the the
-	 * real page directory stuff, and the data structures. If I discover
-	 * that I need to create a new page table before mapping the desired
-	 * addresses then I should make sure that I don't attempt to create
-	 * a new page table at the specified physical address. This would be
-	 * bad because writing to the virtual address would then clobber the
-	 * newly created page table, invalidate the information on the page
-	 * directory data structure, and ultimatly crash the system. If I
-	 * discover that the next free frame is the one for the physical
-	 * address in question, then I should allocate the next one, create
-	 * the page table, and free the previous frame.
-	 */
-
-	// page align the virtual and physical address
+	virt_addr &= ~(0xFFF); // sanitize the address, and make sure it's page aligned
 	phys_addr &= ~(0xFFF);
-	virt_addr &= ~(0xFFF);
 	
-	put_str("\nvirt_addr=");
-	put_hex(virt_addr);
-	put_str("\tphys_addr");
-	put_hex(phys_addr);
-	
-	// figure out the page directory index, and page table index for
-	// the virtual address that's been provided.
+	// figure out the page directory index, and page table index for the virtual address
 	u32int page_dir_index = virt_addr >> 22;
 	u32int page_table_index = (virt_addr >> 12) & 0x3FF;
 	
-	put_str("\npage_dir_index=");
-	put_dec(page_dir_index);
-	put_str("\npage_table_index=");
-	put_dec(page_table_index);
+	// create a pointer the page directory so i can work with it
+	u32int *page_directory = current_page_directory->virt_addr;
 	
-	// make a pointer to the page directory
-	u32int *page_dir_ptr = page_directory->virt_addr;
-	
-	// check to see if I already have a page table. if I don't, create one
-	// if there isn't a page table on the index.
-	if ((page_dir_ptr[page_dir_index] & 0x1) == 0)
+	// if there's no page table for the frame
+	if ((page_directory[page_dir_index] & 0x1) == 0)
 	{
-		// allocate a frame for the new page table
-		u32int table_frame = alloc_frame();
+		// create a page table
 		
-		// if that frame is for the physical address i'm trying to map
-		if (phys_addr == table_frame)
+		// allocate a frame for the new page table
+		u32int table_phys_addr = alloc_frame();
+		
+		// make sure that's not the page we're trying to map
+		if (table_phys_addr == phys_addr)
 		{
-			u32int temp = table_frame;
-			table_frame = alloc_frame();
+			u32int temp = table_phys_addr;
+			table_phys_addr = alloc_frame();
 			free_frame(temp);
 		}
 		
-		// i need to allocate 4 KB of page aligned virtual memory, and
-		// make sure it isn't the virtual address i'm trying to work with.
-		// i need to get the VMM working before I can do this.
-		// oops.
-		// got that done. I can continue on this.
+		// create a pointer to the kernel's page table
+		u32int *kernel_page_table = current_page_directory->tables[768].virt_addr;
 		
+		// store the value on PT10 for later
+		u32int PT10_tmp = kernel_page_table[10];
+		
+		// map the new page to 0xC000A000
+		kernel_page_table[10] = table_phys_addr | 3;
+		
+		// create a pointer ot the new page so i can alter it
+		u32int *page_table = (u32int *) 0xC000A000;
+		
+		// clear it
+		memset((u8int *) page_table, 0, 4096);
+		
+		// create a page table in there.
+		for (u32int i = 0; i < 1024; i++)
+		{
+			page_table[i] = 0 | 2;
+		}
+		
+		// put the physical address of the new page table on the page directory at the proper index
+		page_directory[page_dir_index] = table_phys_addr | 3;
+		
+		// figure out the recursive address for the new page table
+		u32int page_table_recursive_addr = 0xFFC00000 + (0x1000 * page_dir_index);
+		
+		// populate the proper values on the data structure
+		current_page_directory->tables[page_dir_index].virt_addr = (u32int *) page_table_recursive_addr;
+		current_page_directory->tables[page_dir_index].phys_addr = table_phys_addr;
+		
+		// restore the original mapping on PT10
+		kernel_page_table[10] = PT10_tmp;
 	}
 	
-	put_str("\n");
-}
-
-u32int table_attribs(u32int page_dir_index)
-{
-	u32int *page_directory = current_page_directory->virt_addr;
-	return page_directory[page_dir_index] & 0xFFF;
-}
-
-/*
-void unmap_page(page_directory_type *page_directory, u32int virt_addr)
-{
+	// get the attributes for the page table
+	u32int table_attribs = get_table_attribs(page_dir_index);
 	
+	// create a pointer to the page table so i can alter it
+	u32int *page_table = current_page_directory->tables[page_dir_index].virt_addr;
+	
+	// map the physical address
+	page_table[page_table_index] = phys_addr | table_attribs;
+	
+	// flush the TLB for that page
+	invlpg(virt_addr);
 }
-*/
+
+void unmap_page(u32int virt_addr)
+{
+	virt_addr &= ~(0xFFF); // sanitize the address, and make sure it's page aligned
+	
+	// figure out the page directory index, and page table index for the virtual address
+	u32int page_dir_index = virt_addr >> 22;
+	u32int page_table_index = (virt_addr >> 12) & 0x3FF;
+	
+	// create a pointer the page directory so i can work with it
+	u32int *page_directory = current_page_directory->virt_addr;
+	
+	// if there's a page table for the frame
+	if (page_directory[page_dir_index] & 0x1)
+	{
+		// create a pointer to the page table so i can alter it
+		u32int *page_table = current_page_directory->tables[page_dir_index].virt_addr;
+		
+		// unmap the page
+		page_table[page_table_index] = 0;
+		
+		// flush the TLB for that page
+		invlpg(virt_addr);
+	}
+}
 
 /*
 void change_page_directory(page_directory_type *page_directory)

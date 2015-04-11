@@ -1,6 +1,6 @@
 #include <vmm.h>
 
-extern u32int page_table_virt_addr;
+extern page_directory_type *current_page_directory;
 
 list_type *vmm_unused_nodes;
 list_type *vmm_used;
@@ -8,53 +8,16 @@ list_type *vmm_free;
 
 void vmm_initialize()
 {
-	/*
-	 * I need to determine the virtual address of the kernel's page table
-	 * and put the list right after that. Going over the page directory
-	 * is useless for this because of it's 4 KB granularity, and the fact
-	 * that 4 MB of pages are mapped when the kernel is loaded. I have
-	 * to do this without causing any page faults. This means that I'll
-	 * need to compact the list after each node is created in order to
-	 * keep my memory usage to an absolute minimum. This is because stuff
-	 * in the paging code (specifically the page fault interrupt handler)
-	 * will rely on code in the virtual memory manager. Because I have
-	 * a full 4 MB of memory mapped this means that I won't need to
-	 * actually evaluate every page table for 4 KB portions of free space.
-	 * In fact, since I already know the state of the memory allocations
-	 * coming in to this function it might just be better to create a few
-	 * nodes for all of the space I know is free. I'll know that everything
-	 * from 0x0 - BFFF FFFF is free, everything from 0xC000 0000 - 0xC040 0000
-	 * is used, and everything from 0xC040 0001 - 0xFFFF FFFF is free.
-	 * Since the stuff in that first 4 MB of space is vital to kernel
-	 * operations it'll never be available to be freed, and doesn't need
-	 * to go on any list. The same is true for the 4 MB of virtual
-	 * address space that's used by the recursive mappings.
-	 */
+	// create a pointer to the current page directory
+	u32int *page_directory = current_page_directory->virt_addr;
 	
-	// start below here to keep the indenting neat
-	u32int vmm_starting_addr = page_table_virt_addr + 0x1000;
-	
-	/*
-	put_str("\nvmm_starting_addr=");
-	put_hex(vmm_starting_addr);
-	put_str("\nsizeof(list_type)=");
-	put_hex(sizeof(list_type));
-	*/
+	// create a pointer to the place where the lists will start
+	u32int vmm_starting_addr = 0xC0400000;
 	
 	// set up the pointers for the lists
 	vmm_unused_nodes = (list_type *) vmm_starting_addr;
 	vmm_used = (list_type *) ((u32int) vmm_unused_nodes + sizeof(list_type));
 	vmm_free = (list_type *) ((u32int) vmm_used + sizeof(list_type));
-	
-	/*
-	// print it
-	put_str("\nvmm_unused_nodes=");
-	put_hex((u32int) vmm_unused_nodes);
-	put_str("\nvmm_used=");
-	put_hex((u32int) vmm_used);
-	put_str("\nvmm_free=");
-	put_hex((u32int) vmm_free);
-	*/
 	
 	// clear the lists
 	vmm_unused_nodes->first = NULL;
@@ -66,66 +29,63 @@ void vmm_initialize()
 	vmm_free->first = NULL;
 	vmm_free->last = NULL;
 	
-	// set up the pointers for the first node
-	list_node_type *node = (list_node_type *) ((u32int) vmm_free + sizeof(list_type));
-	vmm_data_type *data = (vmm_data_type *) ((u32int) node + sizeof(list_node_type));
-	
-	/*
-	// print it
-	put_str("\nsizeof(list_type)=");
-	put_hex(sizeof(list_type));
-	put_str("\nnode=");
-	put_hex((u32int) node);
-	put_str("\nsizeof(list_node_type)=");
-	put_hex(sizeof(list_node_type));
-	put_str("\ndata=");
-	put_hex((u32int) data);
-	*/
-	
-	// populate the node
-	node->prev = NULL;
-	node->data = data;
-	node->next = NULL;
-	
-	// populate the data
-	data->virt_addr = 0x0;
-	data->size = 0xC0000000;
-	
-	// put the node on the list
-	insert_first(vmm_free, node);
-	
-	// figure out the address for the next node on the list
-	node = (list_node_type *) ((u32int) data + sizeof(vmm_data_type));
-	data = (vmm_data_type *) ((u32int) node + sizeof(list_node_type));
-	
-	/*
-	// print it
-	put_str("\nsizeof(vmm_data_type)=");
-	put_hex(sizeof(vmm_data_type));
-	put_str("\nnode=");
-	put_hex((u32int) node);
-	put_str("\ndata=");
-	put_hex((u32int) data);
-	*/
-	
-	// populate the new node
-	node->prev = NULL;
-	node->data = data;
-	node->next = NULL;
-	
-	// populate the data
-	data->virt_addr = 0xC0400000;
-	data->size = 0x3F800000;
-	
-	// put it on the list
-	insert_last(vmm_free, node);
-	
-	/*
-	// print the list
-	vmm_print_list(vmm_free);
-	put_str("\n");
-	*/
-	
+	// for each item on the page directory (except the last 4 MB where the recursive mappings are)
+	for (u32int i = 0; i < 1023; i++)
+	{
+		// if there's nothing on that index
+		if ((page_directory[i] & 0x1) == 0)
+		{
+			// get a new node
+			list_node_type *new_node = get_unused_node();
+			
+			// make a pointer to the new node data
+			vmm_data_type *new_data = (vmm_data_type *) new_node->data;
+			
+			// populate the data
+			new_data->virt_addr = i * 0x400000;
+			new_data->size = 0x400000;
+			
+			// put the node on the list
+			insert_last(vmm_free, new_node);
+			
+			// compact the list
+			compact_all_free();
+		}
+		else
+		{
+			// figure out the virtual address for the page table
+			u32int virt_addr_base = 0xFFC00000;
+			u32int virt_addr_offset = i << 12;
+			u32int page_table_addr = virt_addr_base + virt_addr_offset;
+			
+			// make a pointer to it
+			u32int *page_table = (u32int *) page_table_addr;
+			
+			// for each entry on the page table
+			for (u32int j = 0; j < 1024; j++)
+			{
+				// if there's nothing on that index
+				if ((page_table[j] & 0x1) == 0)
+				{
+					// get a new node
+					list_node_type *new_node = get_unused_node();
+					
+					// make a pointer to the new node data
+					vmm_data_type *new_data = (vmm_data_type *) new_node->data;
+					
+					// populate the data
+					new_data->virt_addr = ((i * 0x400000) + (j * 0x1000));
+					new_data->size = 0x1000;
+					
+					// put the node on the list
+					insert_last(vmm_free, new_node);
+					
+					// compact the list
+					compact_all_free();
+				}
+			}
+		}
+	}
 }
 
 u32int *malloc(u32int size)
@@ -286,6 +246,23 @@ list_node_type *get_unused_node()
 	{
 		result = vmm_unused_nodes->first;
 		remove(vmm_unused_nodes, vmm_unused_nodes->first);
+	}
+	else if ((vmm_free->first == NULL) && (vmm_used->first == NULL))
+	{
+		u32int new_node_addr = (u32int) vmm_free + sizeof(list_type);
+		
+		u32int new_data_addr = new_node_addr + sizeof(list_node_type);
+		
+		result = (list_node_type *) new_node_addr;
+		
+		result->prev = NULL;
+		result->data = (u32int *) new_data_addr;
+		result->next = NULL;
+		
+		vmm_data_type *result_data = (vmm_data_type *) new_data_addr;
+		
+		result_data->virt_addr = NULL;
+		result_data->size = NULL;
 	}
 	else
 	{

@@ -37,8 +37,8 @@ void page_fault_interrupt_handler(registers regs);
 void invlpg(u32int addr);
 u32int phys_to_virt(page_directory_type *page_directory, u32int phys_addr);
 u32int virt_to_phys(page_directory_type *page_directory, u32int virt_addr);
-void map_page(page_directory_type *page_directory, u32int virt_addr, u32int phys_addr);
-void unmap_page(page_directory_type *page_directory, u32int virt_addr);
+void map_page(u32int virt_addr, u32int phys_addr);
+void unmap_page(u32int virt_addr);
 void change_page_directory(page_directory_type *page_directory);
 u32int get_table_attribs(u32int page_dir_index);
 

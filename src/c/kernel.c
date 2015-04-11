@@ -11,10 +11,7 @@ static char terminal_seperator = '>';
 
 int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 {
-	// the first thing i should do is initalize the paging.
-	// this is where i should initialize paging
-	//paging_initialize(mboot_ptr); // this looks like where i'm getting stuck
-	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // doesn't work if i attempt to initialize paging.
+	//volatile u16int *vga = (u16int *) 0xC00B8000; while (0==0) *vga += 1; // This line is a bit of debugging code.
 	
 	initial_esp = initial_stack;
 	
@@ -167,7 +164,7 @@ void terminal()
 				u32int *ptr = (u32int *) 0xA2349876;
 				u32int do_fault = *ptr;
 				put_str("\n");
-				put_hex(do_fault); // this should print whatever garbage is in logical address 0xBADC0DE
+				put_hex(do_fault);
 				put_str("\n");
 				put_str("Done with read fault test.\n");
 			}
@@ -208,6 +205,34 @@ void terminal()
 			else if (strcmp((string) token, "printFree") == 0)
 			{
 				vmm_print_free();
+			}
+			else if (strcmp((string) token, "mapTest") == 0)
+			{
+				put_str("\n");
+				
+				u32int phys_mem = alloc_frame();
+				
+				map_page(0xA0000000, phys_mem);
+				
+				string *ptr = (string *) 0xA0000000;
+				
+				*ptr = "Hi there!";
+				
+				unmap_page(0xA0000000);
+				
+				map_page(0xABCD0000, phys_mem);
+				
+				string *ptr2 = (string *) 0xABCD0000;
+				
+				put_str(*ptr2);
+				
+				u32int *ptr3 = (u32int *) 0xA0000000;
+				
+				u32int do_fault = *ptr3;
+				put_str("\n");
+				put_hex(do_fault);
+				
+				put_str("\n");
 			}
 			/*
 			else if (strcmp((string) token, "bitmap_test") == 0)
