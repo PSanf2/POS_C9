@@ -170,6 +170,7 @@ void page_fault_interrupt_handler(registers regs)
 	
 	put_str("\nPage fault at virt addr ");
 	put_hex(read_cr2());
+	put_str("\n");
 	
 	u32int present = regs.err_code & 0x1;
 	u32int rw = regs.err_code & 0x2;
@@ -179,100 +180,10 @@ void page_fault_interrupt_handler(registers regs)
 	{
 		// gather information
 		u32int faulting_virt_addr = read_cr2();
-		u32int page_dir_index = faulting_virt_addr >> 22;
-		u32int page_table_index = (faulting_virt_addr >> 12) & 0x3FF;
-		//u32int page_offset = faulting_virt_addr & 0xFFF;
 		
-		// make a pointer to the current page directory's virtual address
-		u32int *page_directory = current_page_directory->virt_addr;
+		u32int phys_addr = alloc_frame();
 		
-		/*
-		// print out some information for debugging
-		put_str("\nfaulting_virt_addr=");
-		put_hex(faulting_virt_addr);
-		put_str("\npage_dir_index=");
-		put_dec(page_dir_index);
-		put_str("\npage_table_index=");
-		put_dec(page_table_index);
-		put_str("\npage_offset=");
-		put_hex(page_offset);
-		put_str("\npage_directory=");
-		put_hex((u32int) page_directory);
-		*/
-		
-		// if the page table for the faulting address is not present
-		if ((page_directory[page_dir_index] & 0x1) == 0x0)
-		{
-			
-			// i need to allocate 4KB of page aligned virtual address
-			// space above the end of the kernel
-			//u32int *table_virt_addr = malloc_above(0x1000, 0x1000, kernel_end); <--- NO!
-			// i should be figuring out the recursively mapped virtual address that the page table will be using.
-			// before i'll be able to write to the page table i'll need to create the mappings for it?
-			// FFC0 0000 = page table 0 virt addr
-			// FFC0 1000 = page table 1
-			// FFC0 2000 = page table 2
-			// etc...
-			// FFFF F000 = page table 1023
-			// the page dir index should tell me which page table i'll want to write to.
-			// i believe i can update the information on the data structure,
-			// update the data in the real page directory, and flush the tlb, and i'll be able to write to the page table.
-			// figuring out the address for the page table should be FFC0 0000 + 0x1000 * page dir index
-			// The above won't help me when creating a new page table, just for keeping track of them.
-			// And it's the value i'll need to put on the data structure
-			// bottom line is that this should be very similar to the previous version, with the addition of a few lines to
-			// keep the stuff on the data structure up to date.
-			
-			// i need to make a pointer to the kernel's page table
-			u32int *kernel_page_table = current_page_directory->tables[768].virt_addr;
-			
-			// store the value on PT10 for later
-			u32int PT10_tmp = kernel_page_table[10];
-			
-			// get a physical address for the new page table
-			u32int new_table_phys_addr = alloc_frame();
-			
-			// map the new page to 0xC000A000
-			kernel_page_table[10] = new_table_phys_addr | 3;
-			
-			// create a pointer to the new page so i can alter it
-			u32int *new_page_table = (u32int *) 0xC000A000;
-			
-			// clear it
-			memset((u8int *) new_page_table, 0, 4096);
-			
-			// create a page table in there
-			for (u32int i = 0; i < 1024; i++)
-			{
-				new_page_table[i] = 0 | 2;
-			}
-			
-			// put the physical address of the new page table on the page directory at the proper index, and set the attributes
-			page_directory[page_dir_index] = new_table_phys_addr | 3;
-			
-			// i need to figure out the recursive address where the new page table lives
-			u32int page_table_recursive_addr = 0xFFC00000 + (0x1000 * page_dir_index);
-			
-			// populate the proper values on the data structure
-			current_page_directory->tables[page_dir_index].virt_addr = (u32int *) page_table_recursive_addr;
-			current_page_directory->tables[page_dir_index].phys_addr = new_table_phys_addr;
-			
-			// restore the value of the old mapping
-			kernel_page_table[10] = PT10_tmp;
-			
-		}
-		
-		// get the attributes for that page table
-		u32int table_attribs = get_table_attribs(page_dir_index);
-		
-		// create a pointer to the page table so i can alter it
-		u32int *table = current_page_directory->tables[page_dir_index].virt_addr;
-		
-		// get a physical address for the new page
-		u32int new_page_phys_addr = alloc_frame();
-		
-		// put the address on the page table w/ the proper attribues
-		table[page_table_index] = new_page_phys_addr | table_attribs;
+		map_page(faulting_virt_addr, phys_addr);
 		
 		// refresh the cr3 value
 		write_cr3(read_cr3());
@@ -476,6 +387,8 @@ void map_page(u32int virt_addr, u32int phys_addr)
 	
 	// flush the TLB for that page
 	invlpg(virt_addr);
+	
+	return;
 }
 
 void unmap_page(u32int virt_addr)

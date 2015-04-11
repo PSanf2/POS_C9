@@ -140,6 +140,12 @@ u32int *malloc_above(u32int size, u32int align, u32int above)
 void free(u32int *virt_addr)
 {
 	list_node_type *used_node = search_used(virt_addr);
+	
+	if (used_node == NULL)
+	{
+		return;
+	}
+	
 	list_node_type *goes_before = search_free_neighbor(used_node);
 	
 	remove(vmm_used, used_node);
