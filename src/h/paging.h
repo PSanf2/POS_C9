@@ -41,5 +41,7 @@ void map_page(u32int virt_addr, u32int phys_addr);
 void unmap_page(u32int virt_addr);
 void change_page_directory(page_directory_type *page_directory);
 u32int get_table_attribs(u32int page_dir_index);
+void copy_page_directory(page_directory_type *source, page_directory_type *dest);
+void copy_page_table(page_table_type *source, page_table_type *dest);
 
 #endif

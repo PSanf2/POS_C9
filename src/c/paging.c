@@ -416,15 +416,33 @@ void unmap_page(u32int virt_addr)
 	}
 }
 
-/*
 void change_page_directory(page_directory_type *page_directory)
 {
-	
+	current_page_directory = page_directory;
+	asm volatile(
+		"mov %0, %%cr3"
+		: /* no outputs */
+		: "r" (page_directory->phys_addr)
+	);
 }
-*/
 
 u32int get_table_attribs(u32int page_dir_index)
 {
-	u32int *page_directory = current_page_directory->virt_addr;
-	return page_directory[page_dir_index] & 0xFFF;
+	return current_page_directory->virt_addr[page_dir_index] & 0xFFF;
+}
+
+void copy_page_directory(page_directory_type *source, page_directory_type *dest)
+{
+	for (u32int i = 0; i < 1024; i++)
+	{
+		dest->virt_addr[i] = source->virt_addr[i];
+	}
+}
+
+void copy_page_table(page_table_type *source, page_table_type *dest)
+{
+	for (u32int i = 0; i < 1024; i++)
+	{
+		dest->virt_addr[i] = source->virt_addr[i];
+	}
 }
