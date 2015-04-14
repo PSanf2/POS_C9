@@ -43,4 +43,14 @@ typedef struct multiboot
     u32int vbe_interface_len;
 } multiboot;
 
+typedef struct multiboot_memory_map_struct
+{
+	u32int size;
+	u32int base_addr_low;
+	u32int base_addr_high;
+	u32int length_low;
+	u32int length_high;
+	u32int type;
+} multiboot_memory_map_type;
+
 #endif

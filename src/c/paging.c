@@ -166,11 +166,12 @@ void paging_initialize()
 
 void page_fault_interrupt_handler(registers regs)
 {
-	//put_str("\nPage fault interrupt handler called.");
-	
+	/*
+	put_str("\nPage fault interrupt handler called.");
 	put_str("\nPage fault at virt addr ");
 	put_hex(read_cr2());
 	put_str("\n");
+	*/
 	
 	u32int present = regs.err_code & 0x1;
 	u32int rw = regs.err_code & 0x2;

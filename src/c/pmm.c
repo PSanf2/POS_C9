@@ -12,13 +12,6 @@ bitmap_type *pmm_frames = 0x0;
 
 void pmm_initialize(struct multiboot *mboot_ptr)
 {
-	// For a 32-bit system there is a maximum possible 4 GB of memory.
-	// This give us 4,096 MB of memory, or 4,194,304 KB
-	// 41,94,304 / 4 = 1,048,576 frames.
-	// 1,048,576 frames will require 1,048,576 bits to keep track of on
-	// a bitmap. That's a theoretical maximum  of 1 MB of memory needed
-	// for the bitmap.
-	
 	// if the physical memory manager has already been initialized
 	if ((u32int) pmm_frames != 0x0)
 	{
@@ -45,19 +38,45 @@ void pmm_initialize(struct multiboot *mboot_ptr)
 	// set the size of the bitmap
 	pmm_frames->bytes = bitmap_size;
 	
-	// clear out everything on the bitmap to make sure there's no garbage in there
-	clear_all_bits(pmm_frames);
+	// set everything on the bitmap as being used
+	set_all_bits(pmm_frames);
 	
-	/*
-	 * I need to figure out which frames are actually in use.
-	 * Before the kernel is started the boot script enables paging with
-	 * 4 MB pages. With this configuration I don't have any page tables.
-	 * Each entry on the page directory represents 4 MB of memory that's
-	 * mapped. For the sake of simplicity, and sanity, I'm going to
-	 * assume that the kernel (and bitmap) always takes up that 4 MB of
-	 * space. The truth is that the kernel and bitmap will always RESIDE
-	 * in that 4 MB of space.
-	 */
+	/* I need to go over the memory map, and figrue out which regions of memory are available for me to use */
+	
+	// make a pointer to the start of the memory map.
+	multiboot_memory_map_type *mmap = (multiboot_memory_map_type *) (mboot_ptr->mmap_addr + 0xC0000000);
+	
+	// while there are entries on the memory map
+	while ((u32int) mmap < mboot_ptr->mmap_addr + 0xC0000000 + mboot_ptr->mmap_length)
+	{
+		// if that entry on the memory map says the memory is free
+		if (mmap->type == 0x1)
+		{
+			// figure out where that region of memory starts
+			u32int region_start = mmap->base_addr_low;
+			
+			// figure out how many frames are in that region
+			u32int region_frames = mmap->length_low / 0x1000;
+			
+			// for each frame in the region
+			for (u32int i = 0; i < region_frames; i++)
+			{
+				// figure out the physical address for that frame
+				u32int four_k_frame_addr = region_start + i * 0x1000;
+				
+				// figure out which bit on the bitmap represents the frame
+				u32int bit_on_bitmap = four_k_frame_addr / 0x1000;
+				
+				// free that bit on the bitmap
+				clear_bit(pmm_frames, bit_on_bitmap);
+			}
+		}
+		
+		// update the pointer to the next entry on the memory map
+		mmap = (multiboot_memory_map_type *) ((u32int) mmap + mmap->size + sizeof(u32int));
+	}
+	
+	/* I need to figure out which frames are actually in use by the kernel */
 	
 	// make a pointer to the page directory
 	u32int *boot_page_dir = (u32int *) boot_page_dir_addr;
