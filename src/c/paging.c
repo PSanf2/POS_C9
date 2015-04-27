@@ -166,12 +166,9 @@ void paging_initialize()
 
 void page_fault_interrupt_handler(registers regs)
 {
-	/*
+	
 	put_str("\nPage fault interrupt handler called.");
-	put_str("\nPage fault at virt addr ");
-	put_hex(read_cr2());
-	put_str("\n");
-	*/
+	
 	
 	u32int present = regs.err_code & 0x1;
 	u32int rw = regs.err_code & 0x2;
@@ -182,7 +179,13 @@ void page_fault_interrupt_handler(registers regs)
 		// gather information
 		u32int faulting_virt_addr = read_cr2();
 		
+		put_str("\nfaulting_virt_addr=");
+		put_hex(faulting_virt_addr);
+		
 		u32int phys_addr = alloc_frame();
+		
+		put_str("\nphys_addr=");
+		put_hex(phys_addr);
 		
 		map_page(faulting_virt_addr, phys_addr);
 		
@@ -236,41 +239,6 @@ void page_fault_interrupt_handler(registers regs)
 void invlpg(u32int addr)
 {
 	asm volatile ("invlpg (%0)" : : "b" (addr) : "memory");
-}
-
-u32int phys_to_virt(page_directory_type *page_directory, u32int phys_addr)
-{
-	u32int result = 0xFFFFFFFF;
-	u32int look_for = phys_addr & ~(0xFFF);
-	u32int offset = phys_addr & 0xFFF;
-	boolean found = FALSE;
-	u32int *page_dir_ptr = page_directory->virt_addr;
-	
-	// for each entry on the page directory
-	for (u32int i = 0; i < 1024 && found == FALSE; i++)
-	{
-		// if there's a page table present
-		if (page_dir_ptr[i] & 0x1)
-		{
-			// make a pointer to that page table
-			u32int *page_table_ptr = page_directory->tables[i].virt_addr;
-
-			// for each entry on the page table
-			for (u32int j = 0; j < 1024 && found == FALSE; j++)
-			{
-				// if that page table entry is what i'm looking for
-				if ((page_table_ptr[j] & ~(0xFFF)) == look_for)
-				{
-					// calculate the result
-					result = (i * 0x400000) + (j * 0x1000) + offset;
-					// and stop looping
-					found = TRUE;
-				}
-			}
-		}
-	}
-	
-	return result;
 }
 
 u32int virt_to_phys(page_directory_type *page_directory, u32int virt_addr)

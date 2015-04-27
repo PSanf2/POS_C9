@@ -41,7 +41,7 @@ void pmm_initialize(struct multiboot *mboot_ptr)
 	// set everything on the bitmap as being used
 	set_all_bits(pmm_frames);
 	
-	/* I need to go over the memory map, and figrue out which regions of memory are available for me to use */
+	// I need to go over the memory map, and figrue out which regions of memory are available for me to use
 	
 	// make a pointer to the start of the memory map.
 	multiboot_memory_map_type *mmap = (multiboot_memory_map_type *) (mboot_ptr->mmap_addr + 0xC0000000);

@@ -35,7 +35,6 @@ extern void write_cr4(u32int);
 void paging_initialize();
 void page_fault_interrupt_handler(registers regs);
 void invlpg(u32int addr);
-u32int phys_to_virt(page_directory_type *page_directory, u32int phys_addr);
 u32int virt_to_phys(page_directory_type *page_directory, u32int virt_addr);
 void map_page(u32int virt_addr, u32int phys_addr);
 void unmap_page(u32int virt_addr);

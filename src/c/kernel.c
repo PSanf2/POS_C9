@@ -29,6 +29,22 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	
 	vmm_initialize();
 	
+	
+	
+	
+	
+	
+	
+	
+	initrd_initialize(mboot_ptr);
+	
+	
+	
+	
+	
+	
+	
+	
 	enable_interrupts();
 	
 	timer_initialize(100);
@@ -38,6 +54,7 @@ int kernel_main(struct multiboot *mboot_ptr, u32int initial_stack)
 	keyboard_set_handler(kernel_keyboard_handler);
 	
 	vga_set_handler(kernel_vga_handler);
+	
 	
 	
 	
@@ -135,17 +152,6 @@ void terminal()
 				put_hex(decNumber);
 				put_str(" = ");
 				put_dec(decNumber);
-				put_str("\n");
-			}
-			else if (strcmp((string) token, "physToVirt") == 0)
-			{
-				extern page_directory_type *current_page_directory;
-				u32int input_addr = hex_str_to_u32int(&terminal_buffer[token_size + 1]);
-				u32int phys = phys_to_virt(current_page_directory, input_addr);
-				put_str("\nPhysical ");
-				put_hex(input_addr);
-				put_str(" = Virtual ");
-				put_hex(phys);
 				put_str("\n");
 			}
 			else if (strcmp((string) token, "virtToPhys") == 0)

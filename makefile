@@ -48,7 +48,21 @@ link: $(GAS_OBJ_FILES) $(C_OBJ_FILES)
 
 # RULES TO RUN THE PROGRAM ONCE IT'S ASSEMBLED, AND COMPILED.
 
-grub-iso: link
+# These are variables for setting up the initial RAM disk.
+INITRD_ALL_FILES := $(wildcard src/initrd/*)
+INITRD_C_FILES := $(wildcard src/initrd/*.c)
+INITRD_GAS_FILES := $(wildcard src/initrd/*.as)
+INITRD_OTHER_FILES := $(filter-out $(INITRD_C_FILES),$(INITRD_ALL_FILES))
+INITRD_OTHER_FILES := $(filter-out $(INITRD_GAS_FILES),$(INITRD_OTHER_FILES))
+
+initrd:
+	mkdir -p build/initrd
+	mkdir -p build/isodir
+	mkdir -p build/isodir/boot
+	cp $(INITRD_OTHER_FILES) build/initrd/
+	find "build/initrd" -type f -printf "%f\n" | xargs tar -cf build/isodir/boot/initrd.tar -C build/initrd
+
+grub-iso: link initrd
 	mkdir -p build/isodir
 	mkdir -p build/isodir/boot
 	cp build/$(OUT_FILE_NAME).bin build/isodir/boot/$(OUT_FILE_NAME).bin
@@ -66,3 +80,4 @@ clean:
 	rm -rf build/*.o
 	rm -rf build/*.bin
 	rm -rf build/isodir
+	rm -rf build/initrd
